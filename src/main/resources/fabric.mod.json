@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "qmine",
+  "version": "${version}",
+  "name": "QMine",
+  "description": "Smart vein mining, multi-block harvesting and terraforming utility for modern Fabric.",
+  "authors": [],
+  "contact": {},
+  "license": "AGPL-3.0",
+  "icon": "assets/qmine/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-datagen": [
+      "ovh.pdx.qmine.client.QmineDataGenerator"
+    ],
+    "client": [
+      "ovh.pdx.qmine.client.QmineClient"
+    ],
+    "main": [
+      "ovh.pdx.qmine.Qmine"
+    ],
+    "modmenu": [
+      "ovh.pdx.qmine.client.integration.QMineModMenuApi"
+    ]
+  },
+  "mixins": [
+    "qmine.mixins.json",
+    {
+      "config": "qmine.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
