@@ -1,0 +1,38 @@
+{
+  "key.category.qmine": "QMine",
+  "key.category.qmine.main": "QMine",
+  "key.qmine.activate": "Activate QMine",
+  "key.qmine.next_shape": "Next Mining Shape",
+  "key.qmine.prev_shape": "Previous Mining Shape",
+
+  "qmine.shape.shapeless": "Shapeless Vein",
+  "qmine.shape.tunnel": "Tunnel",
+  "qmine.shape.wall": "Wall",
+  "qmine.shape.floor": "Floor",
+  "qmine.shape.miner_passage": "Miner Passage",
+  "qmine.shape.mining_tunnel": "Staircase Down",
+  "qmine.shape.escape_tunnel": "Staircase Up",
+  "qmine.shape.staircase_tunnel": "Staircase Tunnel",
+  "qmine.shape.strip_miner": "Strip Miner",
+  "qmine.shape.room": "Room Clearer",
+
+  "enchantment.qmine.excavating": "Excavating",
+
+  "qmine.status.allowed": "Active",
+  "qmine.status.no_block_targeted": "No Target",
+  "qmine.status.not_a_valid_block": "Invalid Block",
+  "qmine.status.too_hungry": "Too Exhausted",
+  "qmine.status.not_enough_xp": "Need More XP",
+  "qmine.status.no_valid_tool": "No Valid Tool",
+  "qmine.status.tool_not_allowed": "Tool Denied",
+  "qmine.status.on_cooldown": "On Cooldown",
+  "qmine.status.no_excavation_enchantment": "Needs Excavating",
+  "qmine.status.other_restriction": "Restricted",
+
+  "tag.item.qmine.included_tools": "Included Mining Tools",
+  "tag.item.qmine.excluded_tools": "Excluded Mining Tools",
+  "tag.item.qmine.excluded_tools.strict": "Strictly Excluded Mining Tools",
+  "tag.block.qmine.block_whitelist": "Whitelisted Mining Blocks",
+  "tag.block.qmine.excluded_blocks": "Excluded Mining Blocks",
+  "tag.block.qmine.single_crop_harvesting_blacklist": "Single Crop Harvesting Blacklist"
+}
