@@ -2,23 +2,27 @@ package ovh.pdx.qmine.enchantment;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.ItemEnchantments;
+import ovh.pdx.qmine.compat.IdCompat;
 import ovh.pdx.qmine.tag.QMineTags;
 
 import java.util.Locale;
 
 public final class ExcavationHelper {
-    public static final Identifier EXCAVATING_ID = Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "excavating");
-    public static final Identifier EXCAVATION_ID = Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "excavation");
+    
+    public static final ResourceLocation EXCAVATING_ID = IdCompat.of("excavating");
+    public static final ResourceLocation EXCAVATION_ID = IdCompat.of("excavation");
     public static final ResourceKey<Enchantment> EXCAVATING_KEY = ResourceKey.create(Registries.ENCHANTMENT, EXCAVATING_ID);
     public static final ResourceKey<Enchantment> EXCAVATION_KEY = ResourceKey.create(Registries.ENCHANTMENT, EXCAVATION_ID);
+    
 
     private ExcavationHelper() {
     }
@@ -33,7 +37,8 @@ public final class ExcavationHelper {
         }
 
         if (holder.unwrapKey().isPresent()) {
-            Identifier id = holder.unwrapKey().get().identifier();
+            
+            ResourceLocation id = holder.unwrapKey().get().location();
             if (id.getNamespace().equals(QMineTags.MOD_ID) && (id.getPath().equals("excavating") || id.getPath().equals("excavation") || id.getPath().contains("excavat"))) {
                 return true;
             }
@@ -70,6 +75,7 @@ public final class ExcavationHelper {
 
         return false;
     }
+    
 
     public static int getExcavatingLevel(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
@@ -109,6 +115,7 @@ public final class ExcavationHelper {
                 }
             }
         }
+        
 
         return maxLevel;
     }

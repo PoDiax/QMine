@@ -11,7 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.component.SwingAnimation;
+
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -35,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Qmine implements ModInitializer {
+
     public static final String MOD_ID = "qmine";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
@@ -58,29 +59,16 @@ public class Qmine implements ModInitializer {
     @Override
     public void onInitialize() {
         instance = this;
-        LOGGER.info("Initializing QMine...");
+        LOGGER.info("Initializing QMine (Fabric)...");
 
         ConfigManager.loadServerConfig();
         QMineNetworking.initCommon();
 
+        
+
         // Sync cooldown on player join
-        ServerPlayerEvents.JOIN.register(player -> {
-            var cfg = ConfigManager.getServerConfig();
-            long cooldownTicks = cfg.cooldownTicks;
-            QMineNetworking.sendToPlayer(player, new SyncCooldownPayload(cooldownTicks, SyncCooldownPayload.CooldownType.COOLDOWN));
-
-            if (cfg.treeHarvesterEnabled && cfg.warnConflictingTreeMods && ovh.pdx.qmine.compat.TreeModDetector.hasConflictingTreeMods()) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                        "§b[QMine]§r External tree mod detected: §e" + ovh.pdx.qmine.compat.TreeModDetector.getConflictSummary() + "§r. You can toggle QMine's Tree Harvester under Mod Menu / Settings."
-                ));
-            }
-
-            if (cfg.vanillaClientSupport && cfg.vanillaWelcomeMessage && !QMineNetworking.hasClientMod(player)) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                        "§b[QMine]§r Server ore vein mining enabled! Sneak while mining ores to vein mine."
-                ));
-            }
-        });
+        ServerPlayerEvents.JOIN.register(this::onPlayerJoin);
+        
 
         // Block breaking hook
         PlayerBlockBreakEvents.BEFORE.register((level, player, blockPos, blockState, blockEntity) -> {
@@ -97,8 +85,9 @@ public class Qmine implements ModInitializer {
         CommandRegistrationCallback.EVENT.register(QMineCommands::register);
 
         // Placed log tracking & leaf decay lifecycle
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents.LOAD.register((server, level) -> ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().load(level));
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents.UNLOAD.register((server, level) -> {
+        
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents.LOAD.register((server, level) -> ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().load(level));
+        net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents.UNLOAD.register((server, level) -> {
             ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().save(level);
             ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().clear(level);
         });
@@ -113,14 +102,37 @@ public class Qmine implements ModInitializer {
 
         // Lifecycle cleanup
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            playerDataMap.clear();
-            ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().clear();
-            ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().clearAll();
-            ovh.pdx.qmine.tree.FallingTrunkTracker.getInstance().clearAll();
-            ovh.pdx.qmine.tree.CascadeTreeTracker.getInstance().clearAll();
-            ovh.pdx.qmine.tree.ShiftDownTreeTracker.getInstance().clearAll();
-            ovh.pdx.qmine.tree.FallenTreeTracker.getInstance().clearAll();
+            cleanupServer();
         });
+    }
+    
+
+    private void cleanupServer() {
+        playerDataMap.clear();
+        ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().clear();
+        ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().clearAll();
+        ovh.pdx.qmine.tree.FallingTrunkTracker.getInstance().clearAll();
+        ovh.pdx.qmine.tree.CascadeTreeTracker.getInstance().clearAll();
+        ovh.pdx.qmine.tree.ShiftDownTreeTracker.getInstance().clearAll();
+        ovh.pdx.qmine.tree.FallenTreeTracker.getInstance().clearAll();
+    }
+
+    private void onPlayerJoin(ServerPlayer player) {
+        var cfg = ConfigManager.getServerConfig();
+        long cooldownTicks = cfg.cooldownTicks;
+        QMineNetworking.sendToPlayer(player, new SyncCooldownPayload(cooldownTicks, SyncCooldownPayload.CooldownType.COOLDOWN));
+
+        if (cfg.treeHarvesterEnabled && cfg.warnConflictingTreeMods && ovh.pdx.qmine.compat.TreeModDetector.hasConflictingTreeMods()) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    "§b[QMine]§r External tree mod detected: §e" + ovh.pdx.qmine.compat.TreeModDetector.getConflictSummary() + "§r. You can toggle QMine's Tree Harvester under Mod Menu / Settings."
+            ));
+        }
+
+        if (cfg.vanillaClientSupport && cfg.vanillaWelcomeMessage && !QMineNetworking.hasClientMod(player)) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    "§b[QMine]§r Server ore vein mining enabled! Sneak while mining ores to vein mine."
+            ));
+        }
     }
 
     public InteractionResult handleRightClick(Player player, net.minecraft.world.level.Level level, InteractionHand hand, BlockHitResult hitResult) {
@@ -136,8 +148,9 @@ public class Qmine implements ModInitializer {
         if (!data.isMiningActive(serverPlayer)) {
             if (ConfigManager.getServerConfig().singleCropHarvesting && CropHarvestingHandler.isMatureCrop(state)) {
                 if (CropHarvestingHandler.harvestSingleCrop(player, clickPos, state)) {
-                    serverPlayer.swing(hand, SwingAnimation.DEFAULT, false);
-                    return InteractionResult.SUCCESS_SERVER;
+                    
+                    serverPlayer.swing(hand, true);
+                    return InteractionResult.SUCCESS;
                 }
             }
             return InteractionResult.PASS;
@@ -155,14 +168,16 @@ public class Qmine implements ModInitializer {
 
         int affected = RightClickDispatcher.getInstance().dispatch(context, hand, data.getCachedPositions());
         if (affected > 0) {
-            serverPlayer.swing(hand, SwingAnimation.DEFAULT, false);
+            
+            serverPlayer.swing(hand, true);
             if (!player.isCreative()) {
                 CooldownTracker.setLastMineTime(player, System.currentTimeMillis());
                 if (ConfigManager.getServerConfig().consumeExperience) {
                     data.addPendingXPCost(Math.max(0, affected - 1));
                 }
             }
-            return InteractionResult.SUCCESS_SERVER;
+            
+            return InteractionResult.SUCCESS;
         }
 
         return InteractionResult.PASS;

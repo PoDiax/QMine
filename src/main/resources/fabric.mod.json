@@ -4,8 +4,12 @@
   "version": "${version}",
   "name": "QMine",
   "description": "Smart vein mining, multi-block harvesting and terraforming utility for modern Fabric.",
-  "authors": [],
-  "contact": {},
+  "authors": [
+    "PoDiax"
+  ],
+  "contact": {
+    "sources": "https://github.com/PoDiax/QMine"
+  },
   "license": "AGPL-3.0",
   "icon": "assets/qmine/icon.png",
   "environment": "*",

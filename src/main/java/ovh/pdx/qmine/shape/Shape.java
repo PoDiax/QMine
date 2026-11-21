@@ -3,12 +3,14 @@ package ovh.pdx.qmine.shape;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
 
 public interface Shape {
-    Identifier getId();
+    
+    ResourceLocation getId();
 
     List<BlockPos> getBlocks(ShapeContext context);
 

@@ -57,7 +57,7 @@ public final class TreeHarvestHandler {
         if (name.contains("dark_oak")) return Blocks.DARK_OAK_SAPLING.defaultBlockState();
         if (name.contains("mangrove")) return Blocks.MANGROVE_PROPAGULE.defaultBlockState();
         if (name.contains("cherry")) return Blocks.CHERRY_SAPLING.defaultBlockState();
-        if (name.contains("pale_oak")) return Blocks.PALE_OAK_SAPLING.defaultBlockState();
+        
         if (name.contains("crimson")) return Blocks.CRIMSON_FUNGUS.defaultBlockState();
         if (name.contains("warped")) return Blocks.WARPED_FUNGUS.defaultBlockState();
         if (name.contains("oak")) return Blocks.OAK_SAPLING.defaultBlockState();

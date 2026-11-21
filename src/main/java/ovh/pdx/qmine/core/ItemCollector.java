@@ -15,15 +15,22 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public final class ItemCollector implements Consumer<ItemStack> {
+    private static ItemStack copyOne(ItemStack stack) {
+        return stack.copyWithCount(1);
+        
+    }
+
     private static final Hash.Strategy<ItemStack> STACK_STRATEGY = new Hash.Strategy<>() {
         @Override
         public int hashCode(ItemStack stack) {
             return ItemStack.hashItemAndComponents(stack);
+            
         }
 
         @Override
         public boolean equals(ItemStack a, ItemStack b) {
             return a == b || (a != null && b != null && a.isEmpty() == b.isEmpty() && ItemStack.isSameItemSameComponents(a, b));
+            
         }
     };
 
@@ -43,7 +50,7 @@ public final class ItemCollector implements Consumer<ItemStack> {
                 } else {
                     entry.setValue(count - 1);
                 }
-                return key.copyWithCount(1);
+                return copyOne(key);
             }
         }
         return ItemStack.EMPTY;
@@ -52,7 +59,7 @@ public final class ItemCollector implements Consumer<ItemStack> {
     @Override
     public void accept(ItemStack stack) {
         if (!stack.isEmpty()) {
-            items.mergeInt(stack.copyWithCount(1), stack.getCount(), Integer::sum);
+            items.mergeInt(copyOne(stack), stack.getCount(), Integer::sum);
         }
     }
 

@@ -72,7 +72,8 @@ public final class DropsAccumulator {
             return true;
         } else if (entity instanceof ExperienceOrb orb) {
             accumulatedXp += orb.getValue();
-            entity.kill(serverLevel);
+            
+            entity.discard();
             return true;
         }
 

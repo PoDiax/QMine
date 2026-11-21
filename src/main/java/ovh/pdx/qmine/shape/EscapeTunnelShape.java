@@ -2,14 +2,17 @@ package ovh.pdx.qmine.shape;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
+import ovh.pdx.qmine.compat.IdCompat;
 import ovh.pdx.qmine.tag.QMineTags;
 
 public class EscapeTunnelShape extends DiagonalTunnelShape {
-    public static final Identifier ID = Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "escape_tunnel");
+    
+    public static final ResourceLocation ID = IdCompat.of("escape_tunnel");
 
     @Override
-    public Identifier getId() {
+    public ResourceLocation getId() {
         return ID;
     }
 

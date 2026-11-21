@@ -9,7 +9,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.Permissions;
+
 import ovh.pdx.qmine.Qmine;
 import ovh.pdx.qmine.config.ConfigManager;
 import ovh.pdx.qmine.config.QMineConfig;
@@ -202,7 +202,8 @@ public final class QMineCommands {
 
                 // /qmine reload (admin only)
                 .then(Commands.literal("reload")
-                        .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+                        
+                        .requires(source -> source.hasPermission(2))
                         .executes(context -> {
                             ConfigManager.loadServerConfig();
                             long cooldownTicks = ConfigManager.getServerConfig().cooldownTicks;

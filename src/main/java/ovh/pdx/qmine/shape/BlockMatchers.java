@@ -3,7 +3,8 @@ package ovh.pdx.qmine.shape;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
@@ -47,7 +48,8 @@ public final class BlockMatchers {
 
     public static boolean isCrop(BlockState state) {
         Block block = state.getBlock();
-        return block instanceof VegetationBlock || block instanceof CocoaBlock;
+        
+        return block instanceof BushBlock || block instanceof CocoaBlock;
     }
 
     public static boolean areCropsEquivalent(BlockState a, BlockState b) {
@@ -80,14 +82,16 @@ public final class BlockMatchers {
 
         Set<TagKey<Block>> resolvedTags = new HashSet<>();
         for (String patternStr : tagPatterns) {
-            Identifier id = Identifier.tryParse(patternStr);
+            
+            ResourceLocation id = ResourceLocation.tryParse(patternStr);
             if (id != null) {
                 resolvedTags.add(TagKey.create(Registries.BLOCK, id));
             } else {
                 Pattern regex = globToRegex(patternStr);
-                BuiltInRegistries.BLOCK.getTags().forEach(holder -> {
-                    if (regex.matcher(holder.key().location().toString()).matches()) {
-                        resolvedTags.add(holder.key());
+                
+                BuiltInRegistries.BLOCK.getTagNames().forEach(tagKey -> {
+                    if (regex.matcher(tagKey.location().toString()).matches()) {
+                        resolvedTags.add(tagKey);
                     }
                 });
             }

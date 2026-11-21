@@ -5,6 +5,8 @@ import dev.isxander.yacl3.api.controller.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
+
+
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.Nullable;
 import ovh.pdx.qmine.client.QMineClientController;
@@ -485,7 +487,9 @@ public final class QMineYaclScreen {
                                         )))
                                         .action(yaclScreen -> {
                                             Minecraft mc = Minecraft.getInstance();
-                                            mc.gui.setScreen(new KeyBindsScreen(yaclScreen, mc.options));
+                                            
+                                            
+                                            mc.setScreen(new KeyBindsScreen(yaclScreen, mc.options));
                                         })
                                         .build()
                                 )

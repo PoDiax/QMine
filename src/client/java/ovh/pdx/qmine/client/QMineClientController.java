@@ -1,13 +1,17 @@
 package ovh.pdx.qmine.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+
+
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.minecraft.resources.ResourceLocation;
+
+
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -26,29 +30,31 @@ import java.util.Collections;
 import java.util.List;
 
 public final class QMineClientController {
-    public static final KeyMapping.Category KEY_CATEGORY = KeyMapping.Category.register(
-            Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "main")
-    );
+    
+    
+    public static final String KEY_CATEGORY = "key.categories.qmine";
 
     private static final QMineClientController INSTANCE = new QMineClientController();
 
-    public final KeyMapping keyActivate = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+    public final KeyMapping keyActivate = KeyBindingHelper.registerKeyBinding(new KeyMapping(
             "key.qmine.activate",
             InputConstants.KEY_GRAVE,
             KEY_CATEGORY
     ));
 
-    public final KeyMapping keyNext = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+    public final KeyMapping keyNext = KeyBindingHelper.registerKeyBinding(new KeyMapping(
             "key.qmine.next_shape",
             InputConstants.KEY_UP,
             KEY_CATEGORY
     ));
 
-    public final KeyMapping keyPrev = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+    public final KeyMapping keyPrev = KeyBindingHelper.registerKeyBinding(new KeyMapping(
             "key.qmine.prev_shape",
             InputConstants.KEY_DOWN,
             KEY_CATEGORY
     ));
+    
+    
 
     private boolean keyPressed = false;
     private boolean canMine = false;
@@ -114,6 +120,32 @@ public final class QMineClientController {
                 }
             });
         });
+        
+        
+    }
+
+    public void sendKeyPressed(boolean pressed) {
+        ClientPlayNetworking.send(new KeyPressedPayload(pressed));
+        
+        
+        
+        
+    }
+
+    public void sendModeChanged(boolean next) {
+        ClientPlayNetworking.send(new ModeChangedPayload(next));
+        
+        
+        
+        
+    }
+
+    public void sendShapeResize(boolean increase) {
+        ClientPlayNetworking.send(new ShapeResizePayload(increase));
+        
+        
+        
+        
     }
 
     public void setShape(int shapeIndex, int shapeRadius, @Nullable List<BlockPos> blocks) {
@@ -126,15 +158,21 @@ public final class QMineClientController {
         }
     }
 
+    private static boolean isKeyDown(int key) {
+        
+        
+        return InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), key);
+    }
+
     public static boolean isShiftDown() {
         Minecraft mc = Minecraft.getInstance();
         return (mc.player != null && mc.player.isShiftKeyDown())
-                || InputConstants.isKeyDown(InputConstants.KEY_LSHIFT)
-                || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
+                || isKeyDown(InputConstants.KEY_LSHIFT)
+                || isKeyDown(InputConstants.KEY_RSHIFT);
     }
 
     public static boolean isAltDown() {
-        return InputConstants.isKeyDown(InputConstants.KEY_LALT) || InputConstants.isKeyDown(InputConstants.KEY_RALT);
+        return isKeyDown(InputConstants.KEY_LALT) || isKeyDown(InputConstants.KEY_RALT);
     }
 
     public static boolean isSizeModifierDown() {
@@ -151,12 +189,12 @@ public final class QMineClientController {
 
             // Shift (or Alt) + ~ + Scroll: locked strictly to size change, NEVER menu
             if (isSizeModifierDown() || ConfigManager.getClientConfig().lockScrollToSize) {
-                ClientPlayNetworking.send(new ShapeResizePayload(increase));
+                sendShapeResize(increase);
                 return true;
             }
 
             // Normal un-shifted scroll: cycles shape menu
-            ClientPlayNetworking.send(new ModeChangedPayload(!increase));
+            sendModeChanged(!increase);
             return true;
         }
         return false;
@@ -188,7 +226,7 @@ public final class QMineClientController {
     private void cycleShape(boolean next) {
         boolean requireKey = ConfigManager.getClientConfig().requireActiveKeyForCycling;
         if (!requireKey || keyPressed) {
-            ClientPlayNetworking.send(new ModeChangedPayload(next));
+            sendModeChanged(next);
             lastKeyToggleTime = System.currentTimeMillis();
         }
     }
@@ -196,7 +234,7 @@ public final class QMineClientController {
     private void resizeShape(boolean increase) {
         boolean requireKey = ConfigManager.getClientConfig().requireActiveKeyForCycling;
         if (!requireKey || keyPressed) {
-            ClientPlayNetworking.send(new ShapeResizePayload(increase));
+            sendShapeResize(increase);
             lastKeyToggleTime = System.currentTimeMillis();
         }
     }
@@ -209,7 +247,7 @@ public final class QMineClientController {
         if (ConfigManager.getClientConfig().activationMode == QMineClientConfig.ActivationMode.TOGGLE) {
             while (keyActivate.consumeClick()) {
                 keyPressed = !keyPressed;
-                ClientPlayNetworking.send(new KeyPressedPayload(keyPressed));
+                sendKeyPressed(keyPressed);
                 if (!keyPressed) {
                     QMineOutlineRenderer.getInstance().clear();
                     shapeBlocks = Collections.emptyList();
@@ -221,7 +259,7 @@ public final class QMineClientController {
             keyPressed = keyActivate.isDown();
 
             if (keyPressed != previouslyPressed) {
-                ClientPlayNetworking.send(new KeyPressedPayload(keyPressed));
+                sendKeyPressed(keyPressed);
                 if (!keyPressed) {
                     QMineOutlineRenderer.getInstance().clear();
                     shapeBlocks = Collections.emptyList();

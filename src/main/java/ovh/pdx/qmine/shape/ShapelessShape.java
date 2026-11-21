@@ -1,13 +1,16 @@
 package ovh.pdx.qmine.shape;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
+import ovh.pdx.qmine.compat.IdCompat;
 import ovh.pdx.qmine.tag.QMineTags;
 
 import java.util.*;
 
 public class ShapelessShape implements Shape {
-    public static final Identifier ID = Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "shapeless");
+    
+    public static final ResourceLocation ID = IdCompat.of("shapeless");
 
     private static final List<BlockPos> NEIGHBORS_3D = new ArrayList<>(26);
     private static final List<BlockPos> NEIGHBORS_CROPS = new ArrayList<>(26);
@@ -35,8 +38,9 @@ public class ShapelessShape implements Shape {
         NEIGHBORS_CROPS.sort(Comparator.comparingDouble(p -> p.distSqr(BlockPos.ZERO)));
     }
 
+    
     @Override
-    public Identifier getId() {
+    public ResourceLocation getId() {
         return ID;
     }
 

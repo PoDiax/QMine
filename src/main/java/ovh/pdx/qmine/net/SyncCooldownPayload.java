@@ -1,16 +1,17 @@
 package ovh.pdx.qmine.net;
 
 import net.minecraft.network.FriendlyByteBuf;
+
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
-import ovh.pdx.qmine.tag.QMineTags;
+import ovh.pdx.qmine.compat.IdCompat;
 
 public record SyncCooldownPayload(long timestamp, CooldownType cooldownType) implements CustomPacketPayload {
-    public static final Type<SyncCooldownPayload> TYPE = new Type<>(
-            Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "sync_cooldown")
-    );
+    
+    public static final ResourceLocation ID = IdCompat.of("sync_cooldown");
+    public static final Type<SyncCooldownPayload> TYPE = new Type<>(ID);
 
     public static final StreamCodec<FriendlyByteBuf, SyncCooldownPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.VAR_LONG, SyncCooldownPayload::timestamp,
@@ -39,3 +40,4 @@ public record SyncCooldownPayload(long timestamp, CooldownType cooldownType) imp
         }
     }
 }
+
