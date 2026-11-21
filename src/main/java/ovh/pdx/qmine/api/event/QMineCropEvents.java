@@ -1,8 +1,7 @@
 package ovh.pdx.qmine.api.event;
 
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.event.EventFactory;
-
+import ovh.pdx.qmine.api.event.compat.Event;
+import ovh.pdx.qmine.api.event.compat.EventFactory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,10 +11,6 @@ public final class QMineCropEvents {
     private QMineCropEvents() {
     }
 
-    /**
-     * Allows custom crop harvesting logic for modded crops.
-     * Return true if the crop was handled and harvested.
-     */
     public static final Event<CropHarvestHandler> HARVEST = EventFactory.createArrayBacked(CropHarvestHandler.class,
             listeners -> (level, player, pos, state) -> {
                 for (CropHarvestHandler listener : listeners) {

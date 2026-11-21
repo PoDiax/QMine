@@ -2,8 +2,7 @@ package ovh.pdx.qmine.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import net.fabricmc.loader.api.FabricLoader;
-
+import net.minecraftforge.fml.loading.FMLPaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,8 +16,7 @@ public final class ConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("QMine/Config");
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
-    private static final Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir().resolve("qmine");
-    
+    private static final Path CONFIG_DIR = FMLPaths.CONFIGDIR.get().resolve("qmine");
     private static final Path SERVER_CONFIG_PATH = CONFIG_DIR.resolve("server.json");
     private static final Path CLIENT_CONFIG_PATH = CONFIG_DIR.resolve("client.json");
 
@@ -37,70 +35,49 @@ public final class ConfigManager {
     }
 
     public static void loadServerConfig() {
-        try {
-            if (!Files.exists(CONFIG_DIR)) {
-                Files.createDirectories(CONFIG_DIR);
-            }
-
-            if (Files.exists(SERVER_CONFIG_PATH)) {
-                try (Reader reader = Files.newBufferedReader(SERVER_CONFIG_PATH)) {
-                    QMineConfig loaded = GSON.fromJson(reader, QMineConfig.class);
-                    if (loaded != null) {
-                        serverConfig = loaded;
-                    }
-                }
-            } else {
-                saveServerConfig();
-            }
-        } catch (Exception e) {
-            LOGGER.error("Failed to load QMine server config, using defaults", e);
-        }
+        serverConfig = load(SERVER_CONFIG_PATH, QMineConfig.class, new QMineConfig());
     }
 
     public static void saveServerConfig() {
-        try {
-            if (!Files.exists(CONFIG_DIR)) {
-                Files.createDirectories(CONFIG_DIR);
-            }
-            try (Writer writer = Files.newBufferedWriter(SERVER_CONFIG_PATH)) {
-                GSON.toJson(serverConfig, writer);
-            }
-        } catch (IOException e) {
-            LOGGER.error("Failed to save QMine server config", e);
-        }
+        save(SERVER_CONFIG_PATH, serverConfig);
     }
 
     public static void loadClientConfig() {
-        try {
-            if (!Files.exists(CONFIG_DIR)) {
-                Files.createDirectories(CONFIG_DIR);
-            }
-
-            if (Files.exists(CLIENT_CONFIG_PATH)) {
-                try (Reader reader = Files.newBufferedReader(CLIENT_CONFIG_PATH)) {
-                    QMineClientConfig loaded = GSON.fromJson(reader, QMineClientConfig.class);
-                    if (loaded != null) {
-                        clientConfig = loaded;
-                    }
-                }
-            } else {
-                saveClientConfig();
-            }
-        } catch (Exception e) {
-            LOGGER.error("Failed to load QMine client config, using defaults", e);
-        }
+        clientConfig = load(CLIENT_CONFIG_PATH, QMineClientConfig.class, new QMineClientConfig());
     }
 
     public static void saveClientConfig() {
-        try {
-            if (!Files.exists(CONFIG_DIR)) {
-                Files.createDirectories(CONFIG_DIR);
+        save(CLIENT_CONFIG_PATH, clientConfig);
+    }
+
+    private static <T> T load(Path path, Class<T> clazz, T defaultValue) {
+        if (!Files.exists(path)) {
+            save(path, defaultValue);
+            return defaultValue;
+        }
+
+        try (Reader reader = Files.newBufferedReader(path)) {
+            T config = GSON.fromJson(reader, clazz);
+            if (config == null) {
+                LOGGER.warn("Config file {} was empty, using defaults", path);
+                return defaultValue;
             }
-            try (Writer writer = Files.newBufferedWriter(CLIENT_CONFIG_PATH)) {
-                GSON.toJson(clientConfig, writer);
+            save(path, config);
+            return config;
+        } catch (IOException e) {
+            LOGGER.error("Failed to read config from {}, using defaults", path, e);
+            return defaultValue;
+        }
+    }
+
+    private static <T> void save(Path path, T config) {
+        try {
+            Files.createDirectories(path.getParent());
+            try (Writer writer = Files.newBufferedWriter(path)) {
+                GSON.toJson(config, writer);
             }
         } catch (IOException e) {
-            LOGGER.error("Failed to save QMine client config", e);
+            LOGGER.error("Failed to save config to {}", path, e);
         }
     }
 }

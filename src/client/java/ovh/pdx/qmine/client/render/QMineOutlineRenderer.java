@@ -1,16 +1,10 @@
 package ovh.pdx.qmine.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-
-
-import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-
-
-import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -19,7 +13,6 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.joml.Matrix4f;
 import org.jspecify.annotations.Nullable;
-import ovh.pdx.qmine.client.QMineClientController;
 import ovh.pdx.qmine.config.ConfigManager;
 
 import java.util.*;
@@ -56,7 +49,6 @@ public final class QMineOutlineRenderer {
         List<CachedEdge> edges = new ArrayList<>();
 
         if (ConfigManager.getClientConfig().showBlockGrid) {
-            // Individual block boxes to clearly show how many blocks deep/wide the shape is
             for (BlockPos pos : renderList) {
                 double relX = pos.getX() - origin.getX();
                 double relY = pos.getY() - origin.getY();
@@ -68,7 +60,6 @@ public final class QMineOutlineRenderer {
                 );
             }
         } else {
-            // Merged shape silhouette
             Collection<VoxelShape> shapes = new ArrayList<>();
             for (AABB aabb : ShapeMerger.merge(renderList, origin)) {
                 shapes.add(Shapes.create(aabb.inflate(0.005D)));
@@ -88,8 +79,6 @@ public final class QMineOutlineRenderer {
         this.cachedEdges = List.copyOf(edges);
     }
 
-    
-    
     public void renderOutlines(PoseStack poseStack, Camera camera, MultiBufferSource consumers) {
         final BlockPos originPos = this.cachedOriginPos;
         final List<CachedEdge> edges = this.cachedEdges;
@@ -128,26 +117,8 @@ public final class QMineOutlineRenderer {
         poseStack.popPose();
     }
 
-    public void renderInGame(WorldRenderContext context) {
-        QMineClientController controller = QMineClientController.getInstance();
-        if (!controller.isKeyPressed() || this.cachedOriginPos == null || this.cachedEdges.isEmpty() || !controller.canMine()) {
-            return;
-        }
-
-        Camera camera = context.camera();
-        PoseStack poseStack = context.matrixStack();
-        MultiBufferSource consumers = context.consumers();
-        if (camera == null || consumers == null || poseStack == null) {
-            return;
-        }
-
-        renderOutlines(poseStack, camera, consumers);
-    }
-    
-
     private static void drawEdge(VertexConsumer buffer, Matrix4f matrix, org.joml.Matrix3f normalMatrix,
                                  CachedEdge edge, int r, int g, int b, int a) {
-        
         buffer.vertex(matrix, edge.x1(), edge.y1(), edge.z1())
                 .color(r, g, b, a)
                 .normal(normalMatrix, edge.normalX(), edge.normalY(), edge.normalZ())

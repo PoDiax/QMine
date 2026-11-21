@@ -1,20 +1,33 @@
 package ovh.pdx.qmine;
 
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
-import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.level.BlockEvent;
+import net.minecraftforge.event.level.LevelEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ovh.pdx.qmine.command.QMineCommands;
@@ -22,6 +35,7 @@ import ovh.pdx.qmine.config.ConfigManager;
 import ovh.pdx.qmine.core.CooldownTracker;
 import ovh.pdx.qmine.core.DropsAccumulator;
 import ovh.pdx.qmine.core.PlayerMiningData;
+import ovh.pdx.qmine.enchantment.ExcavatingEnchantment;
 import ovh.pdx.qmine.handler.BlockBreakHandler;
 import ovh.pdx.qmine.handler.CropHarvestingHandler;
 import ovh.pdx.qmine.handler.RightClickDispatcher;
@@ -29,15 +43,18 @@ import ovh.pdx.qmine.net.QMineNetworking;
 import ovh.pdx.qmine.net.SendShapePayload;
 import ovh.pdx.qmine.net.SyncCooldownPayload;
 import ovh.pdx.qmine.shape.ShapeContext;
+import ovh.pdx.qmine.tag.QMineTags;
 
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Qmine implements ModInitializer {
+@Mod(QMineTags.MOD_ID)
+public class Qmine {
+    public static final Logger LOGGER = LoggerFactory.getLogger(QMineTags.MOD_ID);
 
-    public static final String MOD_ID = "qmine";
-    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    public static final DeferredRegister<Enchantment> ENCHANTMENTS = DeferredRegister.create(ForgeRegistries.ENCHANTMENTS, QMineTags.MOD_ID);
+    public static final RegistryObject<Enchantment> EXCAVATING = ENCHANTMENTS.register("excavating", ExcavatingEnchantment::new);
 
     private static Qmine instance;
 
@@ -56,62 +73,90 @@ public class Qmine implements ModInitializer {
         return playerDataMap.computeIfAbsent(player.getUUID(), PlayerMiningData::new);
     }
 
-    @Override
-    public void onInitialize() {
+    public Qmine() {
         instance = this;
-        LOGGER.info("Initializing QMine (Fabric)...");
+        LOGGER.info("Initializing QMine (Forge 1.20.1)...");
 
         ConfigManager.loadServerConfig();
-        QMineNetworking.initCommon();
 
-        net.minecraft.core.Registry.register(
-                net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT,
-                ovh.pdx.qmine.compat.IdCompat.of("excavating"),
-                new ovh.pdx.qmine.enchantment.ExcavatingEnchantment()
-        );
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
+        ENCHANTMENTS.register(modEventBus);
 
-        // Sync cooldown on player join
-        
-        net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            onPlayerJoin(handler.player);
-        });
+        QMineNetworking.register();
 
-        // Block breaking hook
-        PlayerBlockBreakEvents.BEFORE.register((level, player, blockPos, blockState, blockEntity) -> {
-            if (!(player instanceof ServerPlayer sp)) {
-                return true;
-            }
-            return !BlockBreakHandler.getInstance().handleBlockBreak(level, blockPos, blockState, sp);
-        });
-
-        // Right-click interaction hook
-        UseBlockCallback.EVENT.register(this::handleRightClick);
-
-        // Command registration
-        CommandRegistrationCallback.EVENT.register(QMineCommands::register);
-
-        // Placed log tracking & leaf decay lifecycle
-        
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents.LOAD.register((server, level) -> ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().load(level));
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents.UNLOAD.register((server, level) -> {
-            ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().save(level);
-            ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().clear(level);
-        });
-
-        // Tree animation & leaf decay server ticking
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
-            ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().onServerTick(server);
-            ovh.pdx.qmine.tree.FallingTrunkTracker.getInstance().onServerTick(server);
-            ovh.pdx.qmine.tree.CascadeTreeTracker.getInstance().onServerTick(server);
-            ovh.pdx.qmine.tree.ShiftDownTreeTracker.getInstance().onServerTick(server);
-        });
-
-        // Lifecycle cleanup
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            cleanupServer();
-        });
+        MinecraftForge.EVENT_BUS.addListener(this::onServerStopping);
+        MinecraftForge.EVENT_BUS.addListener(this::onServerTick);
+        MinecraftForge.EVENT_BUS.addListener(this::onLevelLoad);
+        MinecraftForge.EVENT_BUS.addListener(this::onLevelUnload);
+        MinecraftForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
+        MinecraftForge.EVENT_BUS.addListener(this::onBlockBreak);
+        MinecraftForge.EVENT_BUS.addListener(this::onRightClickBlock);
+        MinecraftForge.EVENT_BUS.addListener(this::onRegisterCommands);
+        MinecraftForge.EVENT_BUS.addListener(this::onEntityJoinLevel);
     }
-    
+
+    private void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (getDropsAccumulator().handleEntity(event.getEntity(), event.getLevel())) {
+            event.setCanceled(true);
+        }
+    }
+
+    private void onServerStopping(ServerStoppingEvent event) {
+        cleanupServer();
+    }
+
+    private void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+            if (server != null) {
+                ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().onServerTick(server);
+                ovh.pdx.qmine.tree.FallingTrunkTracker.getInstance().onServerTick(server);
+                ovh.pdx.qmine.tree.CascadeTreeTracker.getInstance().onServerTick(server);
+                ovh.pdx.qmine.tree.ShiftDownTreeTracker.getInstance().onServerTick(server);
+            }
+        }
+    }
+
+    private void onLevelLoad(LevelEvent.Load event) {
+        if (event.getLevel() instanceof ServerLevel serverLevel) {
+            ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().load(serverLevel);
+        }
+    }
+
+    private void onLevelUnload(LevelEvent.Unload event) {
+        if (event.getLevel() instanceof ServerLevel serverLevel) {
+            ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().save(serverLevel);
+            ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().clear(serverLevel);
+        }
+    }
+
+    private void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            onPlayerJoin(sp);
+        }
+    }
+
+    private void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (event.getPlayer() instanceof ServerPlayer sp) {
+            if (!BlockBreakHandler.getInstance().handleBlockBreak(event.getLevel(), event.getPos(), event.getState(), sp)) {
+                event.setCanceled(true);
+            }
+        }
+    }
+
+    private void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            InteractionResult result = handleRightClick(sp, event.getLevel(), event.getHand(), event.getHitVec());
+            if (result.consumesAction()) {
+                event.setCanceled(true);
+                event.setCancellationResult(result);
+            }
+        }
+    }
+
+    private void onRegisterCommands(RegisterCommandsEvent event) {
+        QMineCommands.register(event.getDispatcher(), event.getBuildContext(), Commands.CommandSelection.ALL);
+    }
 
     private void cleanupServer() {
         playerDataMap.clear();
@@ -124,6 +169,9 @@ public class Qmine implements ModInitializer {
     }
 
     private void onPlayerJoin(ServerPlayer player) {
+        PlayerMiningData data = getPlayerData(player);
+        QMineNetworking.sendToPlayer(player, SendShapePayload.ofShapeOnly(data.getCurrentShapeIndex(), data.getCurrentShapeRadius()));
+
         var cfg = ConfigManager.getServerConfig();
         long cooldownTicks = cfg.cooldownTicks;
         QMineNetworking.sendToPlayer(player, new SyncCooldownPayload(cooldownTicks, SyncCooldownPayload.CooldownType.COOLDOWN));
@@ -150,11 +198,9 @@ public class Qmine implements ModInitializer {
         BlockState state = level.getBlockState(clickPos);
         PlayerMiningData data = getPlayerData(player);
 
-        // Single crop harvesting without key pressed
         if (!data.isMiningActive(serverPlayer)) {
             if (ConfigManager.getServerConfig().singleCropHarvesting && CropHarvestingHandler.isMatureCrop(state)) {
                 if (CropHarvestingHandler.harvestSingleCrop(player, clickPos, state)) {
-                    
                     serverPlayer.swing(hand, true);
                     return InteractionResult.SUCCESS;
                 }
@@ -174,7 +220,6 @@ public class Qmine implements ModInitializer {
 
         int affected = RightClickDispatcher.getInstance().dispatch(context, hand, data.getCachedPositions());
         if (affected > 0) {
-            
             serverPlayer.swing(hand, true);
             if (!player.isCreative()) {
                 CooldownTracker.setLastMineTime(player, System.currentTimeMillis());
@@ -182,7 +227,6 @@ public class Qmine implements ModInitializer {
                     data.addPendingXPCost(Math.max(0, affected - 1));
                 }
             }
-            
             return InteractionResult.SUCCESS;
         }
 

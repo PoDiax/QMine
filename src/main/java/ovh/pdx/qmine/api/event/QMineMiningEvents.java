@@ -1,8 +1,7 @@
 package ovh.pdx.qmine.api.event;
 
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.event.EventFactory;
-
+import ovh.pdx.qmine.api.event.compat.Event;
+import ovh.pdx.qmine.api.event.compat.EventFactory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,11 +15,6 @@ public final class QMineMiningEvents {
     private QMineMiningEvents() {
     }
 
-    /**
-     * Fired before an individual block is broken during a vein-mine operation.
-     * Return InteractionResult.FAIL to cancel breaking this specific block (e.g. claim protection).
-     * Return InteractionResult.PASS to allow default checks.
-     */
     public static final Event<BeforeBlockBreak> BEFORE_BLOCK_BREAK = EventFactory.createArrayBacked(BeforeBlockBreak.class,
             listeners -> (level, player, pos, state) -> {
                 for (BeforeBlockBreak listener : listeners) {
@@ -32,9 +26,6 @@ public final class QMineMiningEvents {
                 return InteractionResult.PASS;
             });
 
-    /**
-     * Fired after a vein-mine operation completes.
-     */
     public static final Event<AfterVeinMine> AFTER_VEIN_MINE = EventFactory.createArrayBacked(AfterVeinMine.class,
             listeners -> (level, player, originPos, shape, minedBlocks) -> {
                 for (AfterVeinMine listener : listeners) {

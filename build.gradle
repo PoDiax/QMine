@@ -1,94 +1,67 @@
 plugins {
-    id 'net.fabricmc.fabric-loom-remap' version '1.17-SNAPSHOT'
+    id 'dev.architectury.loom' version '1.11.454'
     id 'maven-publish'
 }
 
-version = project.mod_version
+version = "${project.mod_version}"
 group = project.maven_group
+base.archivesName = project.archives_base_name
 
-base {
-    archivesName = "${project.archives_base_name}-fabric-1.20.1"
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
-loom {
-    splitEnvironmentSourceSets()
-
-    mods {
-        "qmine" {
-            sourceSet sourceSets.main
-            sourceSet sourceSets.client
+sourceSets {
+    main {
+        java {
+            srcDir "src/client/java"
+        }
+        resources {
+            srcDir "src/client/resources"
         }
     }
 }
 
-fabricApi {
-    configureDataGeneration {
-        client = true
+loom {
+    forge {
+        mixinConfig "qmine.mixins.json"
+        mixinConfig "qmine.client.mixins.json"
     }
 }
 
 repositories {
     mavenCentral()
-    maven {
-        name = "TerraformersMC"
-        url = "https://maven.terraformersmc.com/releases/"
-    }
-    maven {
-        name = "Nucleoid"
-        url = "https://maven.nucleoid.xyz/"
-    }
-    maven {
-        name = "Xander Maven"
-        url = "https://maven.isxander.dev/releases"
-    }
-    maven {
-        name = "Modrinth"
-        url = "https://api.modrinth.com/maven"
-    }
+    maven { url = "https://maven.minecraftforge.net/" }
+    maven { url = "https://maven.fabricmc.net/" }
+    maven { url = "https://maven.isxander.dev/releases" }
+    maven { url = "https://maven.shedaniel.me/" }
+    maven { url = "https://api.modrinth.com/maven" }
 }
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings loom.officialMojangMappings()
+    forge "net.minecraftforge:forge:${project.forge_version}"
 
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    compileOnly "dev.isxander.yacl:yet-another-config-lib-forge:3.2.1+1.20"
     compileOnly "org.jspecify:jspecify:1.0.0"
-
-    modClientImplementation "maven.modrinth:modmenu:${project.modmenu_version}"
-    modClientImplementation "maven.modrinth:yacl:${project.yacl_version}"
-    modClientRuntimeOnly "maven.modrinth:placeholder-api:${project.placeholder_version}"
 }
 
 processResources {
     inputs.property "version", project.version
-    inputs.property "minecraft_version", project.minecraft_version
-    inputs.property "loader_version", project.loader_version
-    filteringCharset "UTF-8"
 
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version,
-                "minecraft_version": project.minecraft_version,
-                "loader_version": project.loader_version
+    filesMatching("META-INF/mods.toml") {
+        expand "version": project.version
     }
 }
 
-def targetJavaVersion = Integer.parseInt(project.findProperty("target_java_version") ?: "17")
 tasks.withType(JavaCompile).configureEach {
-    it.options.encoding = "UTF-8"
-    it.options.release.set(targetJavaVersion)
+    options.encoding = "UTF-8"
+    options.release = 17
 }
 
 java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-    }
     withSourcesJar()
-}
-
-jar {
-    from("LICENSE.txt") {
-        rename { "${it}_${project.archives_base_name}" }
-    }
 }

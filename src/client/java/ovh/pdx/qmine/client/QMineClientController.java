@@ -1,13 +1,6 @@
 package ovh.pdx.qmine.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
-
-
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.minecraft.resources.ResourceLocation;
-
-
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -30,31 +23,27 @@ import java.util.Collections;
 import java.util.List;
 
 public final class QMineClientController {
-    
-    
     public static final String KEY_CATEGORY = "key.categories.qmine";
 
     private static final QMineClientController INSTANCE = new QMineClientController();
 
-    public final KeyMapping keyActivate = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+    public final KeyMapping keyActivate = new KeyMapping(
             "key.qmine.activate",
             InputConstants.KEY_GRAVE,
             KEY_CATEGORY
-    ));
+    );
 
-    public final KeyMapping keyNext = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+    public final KeyMapping keyNext = new KeyMapping(
             "key.qmine.next_shape",
             InputConstants.KEY_UP,
             KEY_CATEGORY
-    ));
+    );
 
-    public final KeyMapping keyPrev = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+    public final KeyMapping keyPrev = new KeyMapping(
             "key.qmine.prev_shape",
             InputConstants.KEY_DOWN,
             KEY_CATEGORY
-    ));
-    
-    
+    );
 
     private boolean keyPressed = false;
     private boolean canMine = false;
@@ -105,49 +94,31 @@ public final class QMineClientController {
     }
 
     public void initNetworking() {
-        
-        
-        ClientPlayNetworking.registerGlobalReceiver(SendShapePayload.ID, (client, handler, buf, responseSender) -> {
-            SendShapePayload payload = SendShapePayload.read(buf);
-            client.execute(() -> setShape(payload.shapeIndex(), payload.shapeRadius(), payload.positions().orElse(null)));
-        });
-
-        ClientPlayNetworking.registerGlobalReceiver(SyncCooldownPayload.ID, (client, handler, buf, responseSender) -> {
-            SyncCooldownPayload payload = SyncCooldownPayload.read(buf);
-            client.execute(() -> {
-                if (payload.cooldownType() == SyncCooldownPayload.CooldownType.COOLDOWN) {
-                    CooldownTracker.setClientCooldownTicks(payload.timestamp());
-                } else if (payload.cooldownType() == SyncCooldownPayload.CooldownType.LAST_USED) {
-                    if (client.player != null) {
-                        CooldownTracker.setLastMineTime(client.player, payload.timestamp());
+        ClientPayloadReceiver.registerHandlers(
+                payload -> setShape(payload.shapeIndex(), payload.shapeRadius(), payload.positions().orElse(null)),
+                payload -> {
+                    if (payload.cooldownType() == SyncCooldownPayload.CooldownType.COOLDOWN) {
+                        CooldownTracker.setClientCooldownTicks(payload.timestamp());
+                    } else if (payload.cooldownType() == SyncCooldownPayload.CooldownType.LAST_USED) {
+                        Minecraft mc = Minecraft.getInstance();
+                        if (mc.player != null) {
+                            CooldownTracker.setLastMineTime(mc.player, payload.timestamp());
+                        }
                     }
                 }
-            });
-        });
+        );
     }
 
     public void sendKeyPressed(boolean pressed) {
-        
-        
-        net.minecraft.network.FriendlyByteBuf buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
-        buf.writeBoolean(pressed);
-        ClientPlayNetworking.send(KeyPressedPayload.ID, buf);
+        QMineNetworking.sendToServer(new KeyPressedPayload(pressed));
     }
 
     public void sendModeChanged(boolean next) {
-        
-        
-        net.minecraft.network.FriendlyByteBuf buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
-        buf.writeBoolean(next);
-        ClientPlayNetworking.send(ModeChangedPayload.ID, buf);
+        QMineNetworking.sendToServer(new ModeChangedPayload(next));
     }
 
     public void sendShapeResize(boolean increase) {
-        
-        
-        net.minecraft.network.FriendlyByteBuf buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
-        buf.writeBoolean(increase);
-        ClientPlayNetworking.send(ShapeResizePayload.ID, buf);
+        QMineNetworking.sendToServer(new ShapeResizePayload(increase));
     }
 
     public void setShape(int shapeIndex, int shapeRadius, @Nullable List<BlockPos> blocks) {
@@ -161,8 +132,6 @@ public final class QMineClientController {
     }
 
     private static boolean isKeyDown(int key) {
-        
-        
         return InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), key);
     }
 

@@ -1,17 +1,13 @@
 package ovh.pdx.qmine.api.event;
 
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.event.EventFactory;
-
+import ovh.pdx.qmine.api.event.compat.Event;
+import ovh.pdx.qmine.api.event.compat.EventFactory;
 import ovh.pdx.qmine.shape.ShapeRegistry;
 
 public final class QMineShapeEvents {
     private QMineShapeEvents() {
     }
 
-    /**
-     * Fired when QMine initializes shapes. Mods can register custom mining shapes here.
-     */
     public static final Event<Register> REGISTER = EventFactory.createArrayBacked(Register.class,
             listeners -> registry -> {
                 for (Register listener : listeners) {

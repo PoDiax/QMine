@@ -1,17 +1,13 @@
 package ovh.pdx.qmine.api.event;
 
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.event.EventFactory;
-
+import ovh.pdx.qmine.api.event.compat.Event;
+import ovh.pdx.qmine.api.event.compat.EventFactory;
 import ovh.pdx.qmine.handler.RightClickDispatcher;
 
 public final class QMineRightClickEvents {
     private QMineRightClickEvents() {
     }
 
-    /**
-     * Fired when QMine initializes right-click handlers. Mods can register custom right-click actions here.
-     */
     public static final Event<Register> REGISTER = EventFactory.createArrayBacked(Register.class,
             listeners -> dispatcher -> {
                 for (Register listener : listeners) {
