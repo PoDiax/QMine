@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[4,)"
+loaderVersion="[12,)"
 license="AGPL-3.0"
 issueTrackerURL="https://github.com/PoDiax/QMine/issues"
 
@@ -14,14 +14,14 @@ logoFile="assets/qmine/icon.png"
 [[dependencies.qmine]]
 modId="neoforge"
 type="required"
-versionRange="[21.1.0,)"
+versionRange="[26.3.0,)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.qmine]]
 modId="minecraft"
 type="required"
-versionRange="[1.21.1,1.21.2)"
+versionRange="[26.3,26.4)"
 ordering="NONE"
 side="BOTH"
 
