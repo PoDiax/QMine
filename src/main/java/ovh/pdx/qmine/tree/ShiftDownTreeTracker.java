@@ -84,7 +84,6 @@ public final class ShiftDownTreeTracker {
                     continue;
                 }
 
-                // 1. Shift remaining logs down by 1 block
                 tree.remainingLogs.sort(Comparator.comparingInt(BlockPos::getY));
                 List<BlockPos> shiftedLogs = new ArrayList<>();
 
@@ -106,14 +105,12 @@ public final class ShiftDownTreeTracker {
                     continue;
                 }
 
-                // Wood step down effects
                 if (cfg.treeFellingEffects) {
                     level.playSound(null, tree.lowestLog, SoundEvents.WOOD_PLACE, SoundSource.BLOCKS, 0.9f, 0.8f);
                     level.playSound(null, tree.lowestLog, SoundEvents.SCAFFOLDING_FALL, SoundSource.BLOCKS, 0.5f, 1.2f);
                     level.sendParticles(ParticleTypes.HAPPY_VILLAGER, tree.lowestLog.getX() + 0.5, tree.lowestLog.getY() + 0.5, tree.lowestLog.getZ() + 0.5, 3, 0.2, 0.2, 0.2, 0.05);
                 }
 
-                // 2. Break the lowest slice now sitting at the base
                 int currentMinY = tree.remainingLogs.stream().mapToInt(BlockPos::getY).min().orElse(Integer.MAX_VALUE);
                 Iterator<BlockPos> it = tree.remainingLogs.iterator();
 

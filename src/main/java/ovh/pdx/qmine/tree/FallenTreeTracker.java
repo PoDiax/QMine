@@ -12,8 +12,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Tracks logs that have fallen from the sky during Falling Blocks mode.
- * Allows players to harvest fallen tree trunks on the ground without needing leaves.
+ * Tracks logs from falling physics so they can be harvested on the ground without canopy leaves.
  */
 public final class FallenTreeTracker {
     private static final FallenTreeTracker INSTANCE = new FallenTreeTracker();
@@ -44,9 +43,6 @@ public final class FallenTreeTracker {
         return set != null && set.contains(pos.asLong());
     }
 
-    /**
-     * Gathers all connected fallen logs in the cluster (up to maxLogs).
-     */
     public Set<BlockPos> scanFallenTree(ServerLevel level, BlockPos originPos, int maxLogs) {
         Set<BlockPos> discovered = new LinkedHashSet<>();
         Queue<BlockPos> queue = new ArrayDeque<>();

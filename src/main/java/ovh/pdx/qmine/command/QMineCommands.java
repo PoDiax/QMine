@@ -27,7 +27,6 @@ public final class QMineCommands {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext registryAccess, Commands.CommandSelection environment) {
         dispatcher.register(Commands.literal("qmine")
-                // /qmine (status / help)
                 .executes(context -> {
                     CommandSourceStack source = context.getSource();
                     var cfg = ConfigManager.getServerConfig();
@@ -52,7 +51,6 @@ public final class QMineCommands {
                     return 1;
                 })
 
-                // /qmine info
                 .then(Commands.literal("info")
                         .executes(context -> {
                             var cfg = ConfigManager.getServerConfig();
@@ -63,7 +61,6 @@ public final class QMineCommands {
                         })
                 )
 
-                // /qmine shape
                 .then(Commands.literal("shape")
                         .executes(context -> {
                             ServerPlayer player = context.getSource().getPlayerOrException();
@@ -107,7 +104,6 @@ public final class QMineCommands {
                         )
                 )
 
-                // /qmine next (cycle to next shape)
                 .then(Commands.literal("next")
                         .executes(context -> {
                             ServerPlayer player = context.getSource().getPlayerOrException();
@@ -121,7 +117,6 @@ public final class QMineCommands {
                         })
                 )
 
-                // /qmine prev (cycle to previous shape)
                 .then(Commands.literal("prev")
                         .executes(context -> {
                             ServerPlayer player = context.getSource().getPlayerOrException();
@@ -135,7 +130,6 @@ public final class QMineCommands {
                         })
                 )
 
-                // /qmine radius <num>
                 .then(Commands.literal("radius")
                         .then(Commands.argument("value", IntegerArgumentType.integer(1, 9))
                                 .executes(context -> {
@@ -156,7 +150,6 @@ public final class QMineCommands {
                         )
                 )
 
-                // /qmine mode <sneak|always|disabled|default>
                 .then(Commands.literal("mode")
                         .then(Commands.argument("type", StringArgumentType.word())
                                 .suggests((c, builder) -> SharedSuggestionProvider.suggest(List.of("sneak", "always", "disabled", "default"), builder))
@@ -182,7 +175,6 @@ public final class QMineCommands {
                         )
                 )
 
-                // /qmine toggle (quick toggle between enabled and disabled)
                 .then(Commands.literal("toggle")
                         .executes(context -> {
                             ServerPlayer player = context.getSource().getPlayerOrException();
@@ -200,7 +192,6 @@ public final class QMineCommands {
                         })
                 )
 
-                // /qmine reload (admin only)
                 .then(Commands.literal("reload")
                         .requires(source -> source.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
                         .executes(context -> {

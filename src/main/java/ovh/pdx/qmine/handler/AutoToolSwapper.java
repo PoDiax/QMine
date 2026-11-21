@@ -14,7 +14,6 @@ public final class AutoToolSwapper {
         boolean currentCorrect = player.hasCorrectToolForDrops(state);
         float currentSpeed = current.isEmpty() ? 1.0F : current.getDestroySpeed(state);
 
-        // If current tool is already effective and has correct tool for drops, no need to swap
         if ((!requiresCorrectTool || currentCorrect) && currentSpeed > 1.0F) {
             return -1;
         }

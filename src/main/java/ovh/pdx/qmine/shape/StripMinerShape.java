@@ -75,7 +75,6 @@ public class StripMinerShape implements Shape {
             boolean addedAnyInStep = false;
             BlockPos stepBase = context.originPos().relative(forward, step);
 
-            // 1x2 Main Hallway (feet & eye)
             for (int h = 0; h < 2; h++) {
                 BlockPos hallPos = stepBase.above(h);
                 if (context.check(hallPos)) {
@@ -87,7 +86,7 @@ public class StripMinerShape implements Shape {
                 }
             }
 
-            // Side poke-holes every 3 blocks at eye level (h = 1)
+            // Side shafts every 3 blocks at eye level
             if (step % 3 == 0) {
                 BlockPos eyeLevel = stepBase.above();
                 for (int p = 1; p <= pokeDepth; p++) {
