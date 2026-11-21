@@ -4,17 +4,20 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
+import ovh.pdx.qmine.compat.IdCompat;
 import ovh.pdx.qmine.tag.QMineTags;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class StripMinerShape implements Shape {
-    public static final Identifier ID = Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "strip_miner");
+    
+    public static final ResourceLocation ID = IdCompat.of("strip_miner");
 
     @Override
-    public Identifier getId() {
+    public ResourceLocation getId() {
         return ID;
     }
 

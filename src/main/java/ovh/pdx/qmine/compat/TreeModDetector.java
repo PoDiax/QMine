@@ -1,7 +1,6 @@
 package ovh.pdx.qmine.compat;
 
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
+
 
 import java.util.*;
 
@@ -23,12 +22,10 @@ public final class TreeModDetector {
 
     public static List<String> detectLoadedTreeMods() {
         List<String> found = new ArrayList<>();
-        FabricLoader loader = FabricLoader.getInstance();
+        
         for (Map.Entry<String, String> entry : KNOWN_TREE_MODS.entrySet()) {
-            if (loader.isModLoaded(entry.getKey())) {
-                Optional<ModContainer> container = loader.getModContainer(entry.getKey());
-                String name = container.map(c -> c.getMetadata().getName()).orElse(entry.getValue());
-                found.add(name + " (" + entry.getKey() + ")");
+            if (net.neoforged.fml.loading.FMLLoader.getLoadingModList().getModFileById(entry.getKey()) != null) {
+                found.add(entry.getValue() + " (" + entry.getKey() + ")");
             }
         }
         return found;

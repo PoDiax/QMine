@@ -2,11 +2,12 @@ package ovh.pdx.qmine.core;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.player.Input;
+
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -29,7 +30,8 @@ public class PlayerMiningData {
     private final UUID playerId;
     private boolean pressed = false;
     private int shapeIndex = 0;
-    private final Map<Identifier, Integer> shapeRadii = new HashMap<>();
+    
+    private final Map<ResourceLocation, Integer> shapeRadii = new HashMap<>();
     private double pendingXPCost = 0.0;
 
     @Nullable
@@ -87,8 +89,8 @@ public class PlayerMiningData {
         if (player.getPose() == Pose.CROUCHING) {
             return true;
         }
-        Input input = player.getLastClientInput();
-        return input != null && input.shift();
+        
+        return false;
     }
 
     public boolean isMiningActive(ServerPlayer player) {
@@ -186,6 +188,7 @@ public class PlayerMiningData {
 
     public static HitResult rayTrace(ServerPlayer player) {
         double distance = player.getAttributeValue(Attributes.BLOCK_INTERACTION_RANGE);
+        
         return player.pick(player.isCreative() ? distance + 0.5D : distance, 1.0F, false);
     }
 

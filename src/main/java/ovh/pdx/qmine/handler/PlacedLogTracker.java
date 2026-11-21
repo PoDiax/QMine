@@ -50,7 +50,8 @@ public final class PlacedLogTracker {
         try {
             Path dir = level.getServer().getWorldPath(LevelResource.ROOT).resolve("data");
             Files.createDirectories(dir);
-            Path file = dir.resolve("qmine_placed_logs_" + level.dimension().identifier().getPath() + ".dat");
+            
+            Path file = dir.resolve("qmine_placed_logs_" + level.dimension().location().getPath() + ".dat");
 
             try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(file)))) {
                 dos.writeInt(set.size());
@@ -65,9 +66,10 @@ public final class PlacedLogTracker {
 
     public void load(ServerLevel level) {
         try {
+            
             Path file = level.getServer().getWorldPath(LevelResource.ROOT)
                     .resolve("data")
-                    .resolve("qmine_placed_logs_" + level.dimension().identifier().getPath() + ".dat");
+                    .resolve("qmine_placed_logs_" + level.dimension().location().getPath() + ".dat");
 
             if (!Files.exists(file)) {
                 return;

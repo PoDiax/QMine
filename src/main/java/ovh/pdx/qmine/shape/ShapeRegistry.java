@@ -1,6 +1,7 @@
 package ovh.pdx.qmine.shape;
 
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,7 +59,8 @@ public final class ShapeRegistry {
         return next ? (currentIndex + 1) % count : (currentIndex - 1 + count) % count;
     }
 
-    public int indexOf(Identifier id) {
+    
+    public int indexOf(ResourceLocation id) {
         for (int i = 0; i < shapes.size(); i++) {
             if (shapes.get(i).getId().equals(id)) {
                 return i;
@@ -67,7 +69,8 @@ public final class ShapeRegistry {
         return -1;
     }
 
-    public Shape getShape(Identifier id) {
+    
+    public Shape getShape(ResourceLocation id) {
         int index = indexOf(id);
         return index >= 0 ? shapes.get(index) : null;
     }

@@ -3,17 +3,20 @@ package ovh.pdx.qmine.shape;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
+import ovh.pdx.qmine.compat.IdCompat;
 import ovh.pdx.qmine.tag.QMineTags;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class TunnelShape implements Shape {
-    public static final Identifier ID = Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "tunnel");
+    
+    public static final ResourceLocation ID = IdCompat.of("tunnel");
 
     @Override
-    public Identifier getId() {
+    public ResourceLocation getId() {
         return ID;
     }
 

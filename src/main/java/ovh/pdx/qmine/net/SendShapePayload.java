@@ -2,19 +2,21 @@ package ovh.pdx.qmine.net;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
+
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
-import ovh.pdx.qmine.tag.QMineTags;
+import ovh.pdx.qmine.compat.IdCompat;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public record SendShapePayload(int shapeIndex, int shapeRadius, Optional<List<BlockPos>> positions) implements CustomPacketPayload {
-    public static final Type<SendShapePayload> TYPE = new Type<>(
-            Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "send_shape")
-    );
+    
+    public static final ResourceLocation ID = IdCompat.of("send_shape");
+    public static final Type<SendShapePayload> TYPE = new Type<>(ID);
 
     public static final StreamCodec<FriendlyByteBuf, SendShapePayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.VAR_INT, SendShapePayload::shapeIndex,
@@ -36,3 +38,4 @@ public record SendShapePayload(int shapeIndex, int shapeRadius, Optional<List<Bl
         return TYPE;
     }
 }
+

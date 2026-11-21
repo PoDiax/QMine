@@ -81,7 +81,7 @@ public final class CascadeTreeTracker {
                 cascade.delayTicks = 0;
 
                 while (!logs.isEmpty()) {
-                    BlockPos logPos = logs.removeFirst();
+                    BlockPos logPos = logs.remove(0);
                     BlockState state = level.getBlockState(logPos);
 
                     if (!state.is(BlockTags.LOGS)) {

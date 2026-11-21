@@ -1,17 +1,12 @@
 package ovh.pdx.qmine;
 
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
-import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.component.SwingAnimation;
+
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -34,7 +29,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Qmine implements ModInitializer {
+
+@net.neoforged.fml.common.Mod("qmine")
+public class Qmine {
     public static final String MOD_ID = "qmine";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
@@ -55,72 +52,111 @@ public class Qmine implements ModInitializer {
         return playerDataMap.computeIfAbsent(player.getUUID(), PlayerMiningData::new);
     }
 
-    @Override
-    public void onInitialize() {
+    
+    public Qmine(net.neoforged.bus.api.IEventBus modEventBus) {
         instance = this;
-        LOGGER.info("Initializing QMine...");
+        LOGGER.info("Initializing QMine (NeoForge)...");
 
         ConfigManager.loadServerConfig();
-        QMineNetworking.initCommon();
+        modEventBus.addListener(QMineNetworking::registerPayloads);
 
-        // Sync cooldown on player join
-        ServerPlayerEvents.JOIN.register(player -> {
-            var cfg = ConfigManager.getServerConfig();
-            long cooldownTicks = cfg.cooldownTicks;
-            QMineNetworking.sendToPlayer(player, new SyncCooldownPayload(cooldownTicks, SyncCooldownPayload.CooldownType.COOLDOWN));
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onServerStopping);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onServerTick);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onLevelLoad);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onLevelUnload);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onPlayerLoggedIn);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onBlockBreak);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onRightClickBlock);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onRegisterCommands);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(this::onEntityJoinLevel);
+    }
 
-            if (cfg.treeHarvesterEnabled && cfg.warnConflictingTreeMods && ovh.pdx.qmine.compat.TreeModDetector.hasConflictingTreeMods()) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                        "§b[QMine]§r External tree mod detected: §e" + ovh.pdx.qmine.compat.TreeModDetector.getConflictSummary() + "§r. You can toggle QMine's Tree Harvester under Mod Menu / Settings."
-                ));
+    private void onEntityJoinLevel(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
+        if (getDropsAccumulator().handleEntity(event.getEntity(), event.getLevel())) {
+            event.setCanceled(true);
+        }
+    }
+
+    private void onServerStopping(net.neoforged.neoforge.event.server.ServerStoppingEvent event) {
+        cleanupServer();
+    }
+
+    private void onServerTick(net.neoforged.neoforge.event.tick.ServerTickEvent.Post event) {
+        net.minecraft.server.MinecraftServer server = event.getServer();
+        ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().onServerTick(server);
+        ovh.pdx.qmine.tree.FallingTrunkTracker.getInstance().onServerTick(server);
+        ovh.pdx.qmine.tree.CascadeTreeTracker.getInstance().onServerTick(server);
+        ovh.pdx.qmine.tree.ShiftDownTreeTracker.getInstance().onServerTick(server);
+    }
+
+    private void onLevelLoad(net.neoforged.neoforge.event.level.LevelEvent.Load event) {
+        if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().load(serverLevel);
+        }
+    }
+
+    private void onLevelUnload(net.neoforged.neoforge.event.level.LevelEvent.Unload event) {
+        if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().save(serverLevel);
+            ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().clear(serverLevel);
+        }
+    }
+
+    private void onPlayerLoggedIn(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            onPlayerJoin(sp);
+        }
+    }
+
+    private void onBlockBreak(net.neoforged.neoforge.event.level.BlockEvent.BreakEvent event) {
+        if (event.getPlayer() instanceof ServerPlayer sp && event.getLevel() instanceof net.minecraft.server.level.ServerLevel level) {
+            boolean handled = BlockBreakHandler.getInstance().handleBlockBreak(level, event.getPos(), event.getState(), sp);
+            if (handled) {
+                event.setCanceled(true);
             }
+        }
+    }
 
-            if (cfg.vanillaClientSupport && cfg.vanillaWelcomeMessage && !QMineNetworking.hasClientMod(player)) {
-                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                        "§b[QMine]§r Server ore vein mining enabled! Sneak while mining ores to vein mine."
-                ));
+    private void onRightClickBlock(net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock event) {
+        if (event.getEntity() instanceof ServerPlayer sp) {
+            var result = handleRightClick(sp, event.getLevel(), event.getHand(), event.getHitVec());
+            if (result.consumesAction()) {
+                event.setCancellationResult(result);
+                event.setCanceled(true);
             }
-        });
+        }
+    }
 
-        // Block breaking hook
-        PlayerBlockBreakEvents.BEFORE.register((level, player, blockPos, blockState, blockEntity) -> {
-            if (!(player instanceof ServerPlayer sp)) {
-                return true;
-            }
-            return !BlockBreakHandler.getInstance().handleBlockBreak(level, blockPos, blockState, sp);
-        });
+    private void onRegisterCommands(net.neoforged.neoforge.event.RegisterCommandsEvent event) {
+        QMineCommands.register(event.getDispatcher(), event.getBuildContext(), event.getCommandSelection());
+    }
 
-        // Right-click interaction hook
-        UseBlockCallback.EVENT.register(this::handleRightClick);
+    private void cleanupServer() {
+        playerDataMap.clear();
+        ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().clear();
+        ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().clearAll();
+        ovh.pdx.qmine.tree.FallingTrunkTracker.getInstance().clearAll();
+        ovh.pdx.qmine.tree.CascadeTreeTracker.getInstance().clearAll();
+        ovh.pdx.qmine.tree.ShiftDownTreeTracker.getInstance().clearAll();
+        ovh.pdx.qmine.tree.FallenTreeTracker.getInstance().clearAll();
+    }
 
-        // Command registration
-        CommandRegistrationCallback.EVENT.register(QMineCommands::register);
+    private void onPlayerJoin(ServerPlayer player) {
+        var cfg = ConfigManager.getServerConfig();
+        long cooldownTicks = cfg.cooldownTicks;
+        QMineNetworking.sendToPlayer(player, new SyncCooldownPayload(cooldownTicks, SyncCooldownPayload.CooldownType.COOLDOWN));
 
-        // Placed log tracking & leaf decay lifecycle
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents.LOAD.register((server, level) -> ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().load(level));
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents.UNLOAD.register((server, level) -> {
-            ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().save(level);
-            ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().clear(level);
-        });
+        if (cfg.treeHarvesterEnabled && cfg.warnConflictingTreeMods && ovh.pdx.qmine.compat.TreeModDetector.hasConflictingTreeMods()) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    "§b[QMine]§r External tree mod detected: §e" + ovh.pdx.qmine.compat.TreeModDetector.getConflictSummary() + "§r. You can toggle QMine's Tree Harvester under Mod Menu / Settings."
+            ));
+        }
 
-        // Tree animation & leaf decay server ticking
-        net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
-            ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().onServerTick(server);
-            ovh.pdx.qmine.tree.FallingTrunkTracker.getInstance().onServerTick(server);
-            ovh.pdx.qmine.tree.CascadeTreeTracker.getInstance().onServerTick(server);
-            ovh.pdx.qmine.tree.ShiftDownTreeTracker.getInstance().onServerTick(server);
-        });
-
-        // Lifecycle cleanup
-        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-            playerDataMap.clear();
-            ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().clear();
-            ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().clearAll();
-            ovh.pdx.qmine.tree.FallingTrunkTracker.getInstance().clearAll();
-            ovh.pdx.qmine.tree.CascadeTreeTracker.getInstance().clearAll();
-            ovh.pdx.qmine.tree.ShiftDownTreeTracker.getInstance().clearAll();
-            ovh.pdx.qmine.tree.FallenTreeTracker.getInstance().clearAll();
-        });
+        if (cfg.vanillaClientSupport && cfg.vanillaWelcomeMessage && !QMineNetworking.hasClientMod(player)) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    "§b[QMine]§r Server ore vein mining enabled! Sneak while mining ores to vein mine."
+            ));
+        }
     }
 
     public InteractionResult handleRightClick(Player player, net.minecraft.world.level.Level level, InteractionHand hand, BlockHitResult hitResult) {
@@ -136,8 +172,9 @@ public class Qmine implements ModInitializer {
         if (!data.isMiningActive(serverPlayer)) {
             if (ConfigManager.getServerConfig().singleCropHarvesting && CropHarvestingHandler.isMatureCrop(state)) {
                 if (CropHarvestingHandler.harvestSingleCrop(player, clickPos, state)) {
-                    serverPlayer.swing(hand, SwingAnimation.DEFAULT, false);
-                    return InteractionResult.SUCCESS_SERVER;
+                    
+                    serverPlayer.swing(hand, true);
+                    return InteractionResult.SUCCESS;
                 }
             }
             return InteractionResult.PASS;
@@ -155,14 +192,16 @@ public class Qmine implements ModInitializer {
 
         int affected = RightClickDispatcher.getInstance().dispatch(context, hand, data.getCachedPositions());
         if (affected > 0) {
-            serverPlayer.swing(hand, SwingAnimation.DEFAULT, false);
+            
+            serverPlayer.swing(hand, true);
             if (!player.isCreative()) {
                 CooldownTracker.setLastMineTime(player, System.currentTimeMillis());
                 if (ConfigManager.getServerConfig().consumeExperience) {
                     data.addPendingXPCost(Math.max(0, affected - 1));
                 }
             }
-            return InteractionResult.SUCCESS_SERVER;
+            
+            return InteractionResult.SUCCESS;
         }
 
         return InteractionResult.PASS;

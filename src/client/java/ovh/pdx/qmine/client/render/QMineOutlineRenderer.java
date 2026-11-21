@@ -1,11 +1,15 @@
 package ovh.pdx.qmine.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+
+
+
+
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -47,7 +51,7 @@ public final class QMineOutlineRenderer {
         int maxOutline = ConfigManager.getClientConfig().renderOutlineMaxBlocks;
         List<BlockPos> renderList = blocks.size() > maxOutline ? blocks.subList(0, maxOutline) : blocks;
 
-        BlockPos origin = renderList.getFirst();
+        BlockPos origin = renderList.get(0);
         List<CachedEdge> edges = new ArrayList<>();
 
         if (ConfigManager.getClientConfig().showBlockGrid) {
@@ -83,24 +87,16 @@ public final class QMineOutlineRenderer {
         this.cachedEdges = List.copyOf(edges);
     }
 
-    public void renderInGame(LevelRenderContext context) {
-        QMineClientController controller = QMineClientController.getInstance();
+    
+    
+    public void renderOutlines(PoseStack poseStack, Camera camera, MultiBufferSource consumers) {
         final BlockPos originPos = this.cachedOriginPos;
         final List<CachedEdge> edges = this.cachedEdges;
-
-        if (!controller.isKeyPressed() || originPos == null || edges.isEmpty() || !controller.canMine()) {
+        if (originPos == null || edges.isEmpty()) {
             return;
         }
 
-        Minecraft mc = Minecraft.getInstance();
-        Camera camera = mc.getEntityRenderDispatcher().camera;
-        if (camera == null) {
-            return;
-        }
-
-        Vec3 camPos = camera.position();
-        PoseStack poseStack = context.poseStack();
-        SubmitNodeCollector collector = context.submitNodeCollector();
+        Vec3 camPos = camera.getPosition();
 
         poseStack.pushPose();
         poseStack.translate(
@@ -109,40 +105,58 @@ public final class QMineOutlineRenderer {
                 originPos.getZ() - camPos.z
         );
 
-        // 1. Crisp white outer lines (foreground / depth-tested)
-        collector.submitCustomGeometry(poseStack, RenderTypes.LINES, (pose, solidBuffer) -> {
-            Matrix4f matrix = pose.pose();
-            for (CachedEdge edge : edges) {
-                solidBuffer.addVertex(matrix, edge.x1(), edge.y1(), edge.z1())
-                        .setColor(255, 255, 255, 255)
-                        .setNormal(edge.normalX(), edge.normalY(), edge.normalZ())
-                        .setLineWidth(2.0f);
-                solidBuffer.addVertex(matrix, edge.x2(), edge.y2(), edge.z2())
-                        .setColor(255, 255, 255, 255)
-                        .setNormal(edge.normalX(), edge.normalY(), edge.normalZ())
-                        .setLineWidth(2.0f);
-            }
-        });
+        Matrix4f matrix = poseStack.last().pose();
+        org.joml.Matrix3f normalMatrix = poseStack.last().normal();
 
-        // 2. Translucent wireframe through blocks (rendered ONLY IF allowed in settings)
+        // 1. Crisp white outer lines (foreground / depth-tested)
+        VertexConsumer solidBuffer = consumers.getBuffer(RenderType.lines());
+        for (CachedEdge edge : edges) {
+            drawEdge(solidBuffer, matrix, normalMatrix, edge, 255, 255, 255, 255);
+        }
+
+        // 2. Translucent wireframe through blocks
         var clientCfg = ConfigManager.getClientConfig();
         if (clientCfg.renderThroughWalls && clientCfg.previewLineAlpha > 0) {
             int alpha = clientCfg.previewLineAlpha;
-            collector.submitCustomGeometry(poseStack, QMineRenderTypes.LINES_XRAY_TRANSLUCENT, (pose, transBuffer) -> {
-                Matrix4f matrix = pose.pose();
-                for (CachedEdge edge : edges) {
-                    transBuffer.addVertex(matrix, edge.x1(), edge.y1(), edge.z1())
-                            .setColor(0, 229, 255, alpha) // Sleek neon cyan glow visible through walls
-                            .setNormal(edge.normalX(), edge.normalY(), edge.normalZ())
-                            .setLineWidth(1.0f);
-                    transBuffer.addVertex(matrix, edge.x2(), edge.y2(), edge.z2())
-                            .setColor(0, 229, 255, alpha)
-                            .setNormal(edge.normalX(), edge.normalY(), edge.normalZ())
-                            .setLineWidth(1.0f);
-                }
-            });
+            VertexConsumer transBuffer = consumers.getBuffer(QMineRenderTypes.LINES_XRAY_TRANSLUCENT);
+            for (CachedEdge edge : edges) {
+                drawEdge(transBuffer, matrix, normalMatrix, edge, 0, 229, 255, alpha);
+            }
         }
 
         poseStack.popPose();
+    }
+
+    
+    public void renderNeoForge(net.neoforged.neoforge.client.event.RenderLevelStageEvent event) {
+        QMineClientController controller = QMineClientController.getInstance();
+        if (!controller.isKeyPressed() || this.cachedOriginPos == null || this.cachedEdges.isEmpty() || !controller.canMine()) {
+            return;
+        }
+
+        Camera camera = event.getCamera();
+        PoseStack poseStack = event.getPoseStack();
+        if (camera == null || poseStack == null) {
+            return;
+        }
+
+        MultiBufferSource.BufferSource consumers = Minecraft.getInstance().renderBuffers().bufferSource();
+        renderOutlines(poseStack, camera, consumers);
+        consumers.endBatch(RenderType.lines());
+        var clientCfg = ConfigManager.getClientConfig();
+        if (clientCfg.renderThroughWalls && clientCfg.previewLineAlpha > 0) {
+            consumers.endBatch(QMineRenderTypes.LINES_XRAY_TRANSLUCENT);
+        }
+    }
+
+    private static void drawEdge(VertexConsumer buffer, Matrix4f matrix, org.joml.Matrix3f normalMatrix,
+                                 CachedEdge edge, int r, int g, int b, int a) {
+        buffer.addVertex(matrix, edge.x1(), edge.y1(), edge.z1())
+                .setColor(r, g, b, a)
+                .setNormal(edge.normalX(), edge.normalY(), edge.normalZ());
+        buffer.addVertex(matrix, edge.x2(), edge.y2(), edge.z2())
+                .setColor(r, g, b, a)
+                .setNormal(edge.normalX(), edge.normalY(), edge.normalZ());
+        
     }
 }

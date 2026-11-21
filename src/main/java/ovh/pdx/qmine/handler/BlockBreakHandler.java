@@ -5,7 +5,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
+import ovh.pdx.qmine.compat.IdCompat;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.BlockTags;
@@ -49,6 +51,7 @@ public final class BlockBreakHandler {
 
         boolean hasRequiredTool = !ConfigManager.getServerConfig().requireTool
                 || (!mainHand.isEmpty() && (mainHand.has(DataComponents.TOOL) || mainHand.getMaxDamage() > 0 || QMineTags.isIncludedTool(mainHand)));
+        
         if (!hasRequiredTool) {
             return false;
         }
@@ -110,10 +113,8 @@ public final class BlockBreakHandler {
     }
 
     public static boolean isOre(BlockState state) {
-        if (state.is(BlockTags.ORES)) {
-            return true;
-        }
-        if (state.is(TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath("c", "ores")))) {
+        
+        if (state.is(TagKey.create(Registries.BLOCK, IdCompat.of("c", "ores")))) {
             return true;
         }
         if (BuiltInRegistries.BLOCK.wrapAsHolder(state.getBlock()).tags().anyMatch(tag -> {
@@ -122,7 +123,8 @@ public final class BlockBreakHandler {
         })) {
             return true;
         }
-        Identifier id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(state.getBlock());
         String path = id.getPath();
         return path.endsWith("_ore")
                 || path.contains("_ore_")
@@ -202,7 +204,8 @@ public final class BlockBreakHandler {
                 double dx = player.getX() - (originPos.getX() + 0.5);
                 double dy = player.getEyeY() - (originPos.getY() + 0.5);
                 double dz = player.getZ() - (originPos.getZ() + 0.5);
-                hitDir = Direction.getApproximateNearest(dx, dy, dz);
+                
+                hitDir = Direction.getNearest(dx, dy, dz);
             }
 
             data.clearCache();
@@ -247,7 +250,8 @@ public final class BlockBreakHandler {
         }
 
         boolean preventedLava = false;
-        int originalSlot = player.getInventory().getSelectedSlot();
+        
+        int originalSlot = player.getInventory().selected;
         int activeSlot = originalSlot;
 
         try {
@@ -284,9 +288,11 @@ public final class BlockBreakHandler {
                 if (config.autoToolSwap && !player.isCreative()) {
                     int bestSlot = AutoToolSwapper.findBestToolSlot(player, targetState);
                     if (bestSlot != -1 && bestSlot != activeSlot) {
-                        player.getInventory().setSelectedSlot(bestSlot);
+                        
+                        player.getInventory().selected = bestSlot;
                         activeSlot = bestSlot;
-                        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetHeldSlotPacket(bestSlot));
+                        
+                        player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(bestSlot));
                     }
                 }
 
@@ -338,8 +344,10 @@ public final class BlockBreakHandler {
             }
         } finally {
             if (activeSlot != originalSlot) {
-                player.getInventory().setSelectedSlot(originalSlot);
-                player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetHeldSlotPacket(originalSlot));
+                
+                player.getInventory().selected = originalSlot;
+                
+                player.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(originalSlot));
             }
             if (player.level() instanceof ServerLevel serverLevel) {
                 qmine.getDropsAccumulator().finish(serverLevel, originPos, player, config.dropCollection);
