@@ -11,16 +11,14 @@ public final class QMineNetworking {
     }
 
     public static void initCommon() {
-        // C2S payloads
         PayloadTypeRegistry.serverboundPlay().register(KeyPressedPayload.TYPE, KeyPressedPayload.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(ModeChangedPayload.TYPE, ModeChangedPayload.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(ShapeResizePayload.TYPE, ShapeResizePayload.STREAM_CODEC);
 
-        // S2C payloads (register large for SendShapePayload to support up to 64k positions)
+        // Allow up to 1MB for large shape outline syncing
         PayloadTypeRegistry.clientboundPlay().registerLarge(SendShapePayload.TYPE, SendShapePayload.STREAM_CODEC, 1048576);
         PayloadTypeRegistry.clientboundPlay().register(SyncCooldownPayload.TYPE, SyncCooldownPayload.STREAM_CODEC);
 
-        // Server receivers
         ServerPlayNetworking.registerGlobalReceiver(KeyPressedPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
             context.server().execute(() -> Qmine.getInstance().setKeyPressed(player, payload.pressed()));

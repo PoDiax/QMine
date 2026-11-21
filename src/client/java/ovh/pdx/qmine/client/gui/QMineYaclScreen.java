@@ -30,7 +30,6 @@ public final class QMineYaclScreen {
                     QMineOutlineRenderer.getInstance().clear();
                 })
 
-                // ==================== 1. VISUALS & HUD ====================
                 .category(ConfigCategory.createBuilder()
                         .name(Component.literal("Visuals & HUD"))
                         .tooltip(Component.literal("Customize world outlines, X-ray preview, and HUD overlay position"))
@@ -141,7 +140,6 @@ public final class QMineYaclScreen {
                         .build()
                 )
 
-                // ==================== 2. ENERGY & COSTS ====================
                 .category(ConfigCategory.createBuilder()
                         .name(Component.literal("Energy & Costs"))
                         .tooltip(Component.literal("Configure saturation exhaustion and XP costs (switch on/off or disable all costs)"))
@@ -192,7 +190,6 @@ public final class QMineYaclScreen {
                         .build()
                 )
 
-                // ==================== 3. UPGRADES & PROTECTION ====================
                 .category(ConfigCategory.createBuilder()
                         .name(Component.literal("Upgrades & Protection"))
                         .tooltip(Component.literal("Drop collection modes, tool break protection buffer, and mining limits"))
@@ -470,7 +467,6 @@ public final class QMineYaclScreen {
                         .build()
                 )
 
-                // ==================== 4. CONTROLS & INTERACTIONS ====================
                 .category(ConfigCategory.createBuilder()
                         .name(Component.literal("Controls & Right-Click"))
                         .tooltip(Component.literal("Shape menu controls and right-click harvesting interactions"))

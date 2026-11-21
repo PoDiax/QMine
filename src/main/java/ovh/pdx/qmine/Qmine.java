@@ -63,7 +63,6 @@ public class Qmine implements ModInitializer {
         ConfigManager.loadServerConfig();
         QMineNetworking.initCommon();
 
-        // Sync cooldown on player join
         ServerPlayerEvents.JOIN.register(player -> {
             var cfg = ConfigManager.getServerConfig();
             long cooldownTicks = cfg.cooldownTicks;
@@ -82,7 +81,6 @@ public class Qmine implements ModInitializer {
             }
         });
 
-        // Block breaking hook
         PlayerBlockBreakEvents.BEFORE.register((level, player, blockPos, blockState, blockEntity) -> {
             if (!(player instanceof ServerPlayer sp)) {
                 return true;
@@ -90,20 +88,16 @@ public class Qmine implements ModInitializer {
             return !BlockBreakHandler.getInstance().handleBlockBreak(level, blockPos, blockState, sp);
         });
 
-        // Right-click interaction hook
         UseBlockCallback.EVENT.register(this::handleRightClick);
 
-        // Command registration
         CommandRegistrationCallback.EVENT.register(QMineCommands::register);
 
-        // Placed log tracking & leaf decay lifecycle
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents.LOAD.register((server, level) -> ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().load(level));
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents.UNLOAD.register((server, level) -> {
             ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().save(level);
             ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().clear(level);
         });
 
-        // Tree animation & leaf decay server ticking
         net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.END_SERVER_TICK.register(server -> {
             ovh.pdx.qmine.tree.FastLeafDecayHandler.getInstance().onServerTick(server);
             ovh.pdx.qmine.tree.FallingTrunkTracker.getInstance().onServerTick(server);
@@ -111,7 +105,6 @@ public class Qmine implements ModInitializer {
             ovh.pdx.qmine.tree.ShiftDownTreeTracker.getInstance().onServerTick(server);
         });
 
-        // Lifecycle cleanup
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             playerDataMap.clear();
             ovh.pdx.qmine.handler.PlacedLogTracker.getInstance().clear();
@@ -132,7 +125,6 @@ public class Qmine implements ModInitializer {
         BlockState state = level.getBlockState(clickPos);
         PlayerMiningData data = getPlayerData(player);
 
-        // Single crop harvesting without key pressed
         if (!data.isMiningActive(serverPlayer)) {
             if (ConfigManager.getServerConfig().singleCropHarvesting && CropHarvestingHandler.isMatureCrop(state)) {
                 if (CropHarvestingHandler.harvestSingleCrop(player, clickPos, state)) {

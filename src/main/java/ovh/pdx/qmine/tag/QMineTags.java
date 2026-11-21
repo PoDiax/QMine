@@ -59,8 +59,6 @@ public final class QMineTags {
         }
     }
 
-    // ==================== HELPER METHODS ====================
-
     public static boolean isExcludedBlock(BlockState state) {
         return state.is(Blocks.EXCLUDED_BLOCKS);
     }
@@ -68,7 +66,7 @@ public final class QMineTags {
     public static boolean isWhitelistedBlock(BlockState state) {
         var whitelist = BuiltInRegistries.BLOCK.getTagOrEmpty(Blocks.BLOCK_WHITELIST);
         if (!whitelist.iterator().hasNext()) {
-            return true; // No whitelist active
+            return true;
         }
         return state.is(Blocks.BLOCK_WHITELIST);
     }
