@@ -163,7 +163,6 @@ public final class BlockBreakHandler {
             var config = ConfigManager.getServerConfig();
             boolean active = data.isMiningActive(player);
 
-            // 1. Standalone Tree Harvester
             if (config.treeHarvesterEnabled && !active) {
                 boolean sneaking = PlayerMiningData.isPlayerSneaking(player);
                 if (!(config.treeHarvesterSneakToDisable && sneaking)) {
@@ -178,17 +177,15 @@ public final class BlockBreakHandler {
                 }
             }
 
-            // Safe sneak log breaking: sneaking on a log breaks only that single log
+            // Sneaking breaks only the targeted log
             if (active && state.is(BlockTags.LOGS) && config.treeHarvesterEnabled && config.treeHarvesterSneakToDisable && !data.isPressed()) {
                 return false;
             }
 
-            // 2. Vein Miner / Shape Miner
             if (!active || !canMine(player, originPos, state).isAllowed()) {
                 return false;
             }
 
-            // Server-side only mode (without client mod, or when activating via sneak without keybind):
             boolean isServerOnlyMode = !QMineNetworking.hasClientMod(player) || !data.isPressed();
             if (config.vanillaOresOnly && isServerOnlyMode) {
                 if (!isOre(state)) {
@@ -209,7 +206,7 @@ public final class BlockBreakHandler {
             }
 
             data.clearCache();
-            // In server-side only mode, always use ShapelessShape so ore veins are cleanly harvested
+            // Default to shapeless shape for vanilla/server-only clients
             int originalShapeIndex = data.getCurrentShapeIndex();
             if (isServerOnlyMode && originalShapeIndex != 0) {
                 data.setShape("shapeless");
@@ -263,12 +260,10 @@ public final class BlockBreakHandler {
                     continue;
                 }
 
-                // Claim Protection check
                 if (level instanceof ServerLevel sLevel && !ovh.pdx.qmine.compat.ClaimProtection.canBreak(sLevel, pos, player)) {
                     continue;
                 }
 
-                // Anti-Lava Handling & Auto-Replace
                 if (isLavaAdjacent(level, pos)) {
                     if (config.autoReplaceLava) {
                         int replaced = LavaReplacer.replaceAdjacentLava(level, pos, player, qmine.getDropsAccumulator());
@@ -277,14 +272,13 @@ public final class BlockBreakHandler {
                         }
                     }
 
-                    // If still bordering lava (out of filler blocks or autoReplace disabled), keep protective wall
+                    // Keep protective wall if still bordering lava
                     if (isLavaAdjacent(level, pos) && config.antiLavaShield) {
                         preventedLava = true;
                         continue;
                     }
                 }
 
-                // Auto Tool-Swap
                 if (config.autoToolSwap && !player.isCreative()) {
                     int bestSlot = AutoToolSwapper.findBestToolSlot(player, targetState);
                     if (bestSlot != -1 && bestSlot != activeSlot) {
@@ -304,7 +298,6 @@ public final class BlockBreakHandler {
                     continue;
                 }
 
-                // Modder API: Before block break event (allows claim/protection mods to veto this block)
                 if (level instanceof ServerLevel sLevel) {
                     net.minecraft.world.InteractionResult restriction = ovh.pdx.qmine.api.event.QMineMiningEvents.BEFORE_BLOCK_BREAK.invoker().beforeBlockBreak(sLevel, player, pos, targetState);
                     if (restriction == net.minecraft.world.InteractionResult.FAIL) {
@@ -321,7 +314,6 @@ public final class BlockBreakHandler {
 
                 minedCount++;
 
-                // Cascading sound pitch modulation
                 if (config.cascadingSoundPitch && level instanceof ServerLevel sLevel) {
                     float progress = (float) minedCount / (float) Math.max(1, Math.min(positions.size(), 32));
                     float pitch = 0.85f + (progress * 0.70f);
@@ -370,19 +362,16 @@ public final class BlockBreakHandler {
             sLevel.playSound(null, originPos, net.minecraft.sounds.SoundEvents.AMETHYST_BLOCK_CHIME, net.minecraft.sounds.SoundSource.PLAYERS, 0.4f, 1.4f);
             sLevel.sendParticles(net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER, originPos.getX() + 0.5, originPos.getY() + 0.5, originPos.getZ() + 0.5, 5, 0.3, 0.3, 0.3, 0.05);
 
-            // Tree auto-replant at base
             if (config.autoReplantTrees && state.is(BlockTags.LOGS)) {
                 TreeHarvestHandler.getInstance().replantSaplingAtBase(sLevel, originPos, state);
             }
 
-            // Automatic torch placement (tunnels, rooms, floors, veins)
             if (config.autoPlaceTorches) {
                 AutoTorchHandler.getInstance().handleAutoTorch(
                         sLevel, positions, player, data.getCurrentShape(), hitDir, config
                 );
             }
 
-            // Modder API: After vein mine event
             ovh.pdx.qmine.api.event.QMineMiningEvents.AFTER_VEIN_MINE.invoker().afterVeinMine(
                     sLevel, player, originPos, data.getCurrentShape(), positions.subList(0, Math.min(minedCount, positions.size()))
             );

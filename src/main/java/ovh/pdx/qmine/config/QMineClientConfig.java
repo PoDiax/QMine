@@ -1,13 +1,11 @@
 package ovh.pdx.qmine.config;
 
 public class QMineClientConfig {
-    // Rendering & Outlines
     public int renderOutlineMaxBlocks = 256;
     public boolean renderThroughWalls = false;
     public boolean showBlockGrid = false;
     public int previewLineAlpha = 65;
 
-    // Controls & Shape Switching
     public enum ActivationMode {
         HOLD,
         TOGGLE
@@ -18,7 +16,6 @@ public class QMineClientConfig {
     public boolean requireSneakForMenu = false;
     public int shapeMenuContextLines = 2;
 
-    // HUD Overlay Styling & Position
     public enum HudTheme {
         CYAN("Cyan Neon", 0x00E5FF, 0x00B4D8),
         EMERALD("Emerald", 0x34D399, 0x10B981),
