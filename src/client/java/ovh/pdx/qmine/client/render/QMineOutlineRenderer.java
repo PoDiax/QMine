@@ -51,7 +51,6 @@ public final class QMineOutlineRenderer {
         List<CachedEdge> edges = new ArrayList<>();
 
         if (ConfigManager.getClientConfig().showBlockGrid) {
-            // Individual block boxes to clearly show how many blocks deep/wide the shape is
             for (BlockPos pos : renderList) {
                 double relX = pos.getX() - origin.getX();
                 double relY = pos.getY() - origin.getY();
@@ -63,7 +62,6 @@ public final class QMineOutlineRenderer {
                 );
             }
         } else {
-            // Merged shape silhouette
             Collection<VoxelShape> shapes = new ArrayList<>();
             for (AABB aabb : ShapeMerger.merge(renderList, origin)) {
                 shapes.add(Shapes.create(aabb.inflate(0.005D)));
@@ -109,7 +107,6 @@ public final class QMineOutlineRenderer {
                 originPos.getZ() - camPos.z
         );
 
-        // 1. Crisp white outer lines (foreground / depth-tested)
         collector.submitCustomGeometry(poseStack, RenderTypes.LINES, (pose, solidBuffer) -> {
             Matrix4f matrix = pose.pose();
             for (CachedEdge edge : edges) {
@@ -124,7 +121,6 @@ public final class QMineOutlineRenderer {
             }
         });
 
-        // 2. Translucent wireframe through blocks (rendered ONLY IF allowed in settings)
         var clientCfg = ConfigManager.getClientConfig();
         if (clientCfg.renderThroughWalls && clientCfg.previewLineAlpha > 0) {
             int alpha = clientCfg.previewLineAlpha;
@@ -132,7 +128,7 @@ public final class QMineOutlineRenderer {
                 Matrix4f matrix = pose.pose();
                 for (CachedEdge edge : edges) {
                     transBuffer.addVertex(matrix, edge.x1(), edge.y1(), edge.z1())
-                            .setColor(0, 229, 255, alpha) // Sleek neon cyan glow visible through walls
+                            .setColor(0, 229, 255, alpha)
                             .setNormal(edge.normalX(), edge.normalY(), edge.normalZ())
                             .setLineWidth(1.0f);
                     transBuffer.addVertex(matrix, edge.x2(), edge.y2(), edge.z2())

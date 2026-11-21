@@ -176,7 +176,6 @@ public class Qmine {
         BlockState state = level.getBlockState(clickPos);
         PlayerMiningData data = getPlayerData(player);
 
-        // Single crop harvesting without key pressed
         if (!data.isMiningActive(serverPlayer)) {
             if (ConfigManager.getServerConfig().singleCropHarvesting && CropHarvestingHandler.isMatureCrop(state)) {
                 if (CropHarvestingHandler.harvestSingleCrop(player, clickPos, state)) {

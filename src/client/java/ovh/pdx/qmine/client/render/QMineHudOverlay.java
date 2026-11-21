@@ -56,12 +56,10 @@ public final class QMineHudOverlay {
         QMineClientConfig clientCfg = ConfigManager.getClientConfig();
         float scale = (float) clientCfg.overlayScale;
 
-        // Collect information to display
         CanMineResult status = controller.getCanMineStatus();
         boolean canMine = controller.canMine();
         int blockCount = controller.getBlockCount();
 
-        // Hazard detection (Lava)
         boolean lavaHazard = false;
         if (clientCfg.showLavaHazardWarning && canMine && blockCount > 0 && mc.level != null) {
             for (BlockPos p : controller.getShapeBlocks()) {
@@ -75,21 +73,20 @@ public final class QMineHudOverlay {
             }
         }
 
-        // Status text (clean text, no icons)
         String badgeText;
         int badgeColor;
         if (lavaHazard) {
             badgeText = "LAVA DETECTED!";
-            badgeColor = 0xEF4444; // Bright Red
+            badgeColor = 0xEF4444;
         } else if (CooldownTracker.isOnCooldown(mc.player)) {
             badgeText = "COOLDOWN";
-            badgeColor = 0xFBBF24; // Amber
+            badgeColor = 0xFBBF24;
         } else if (canMine && blockCount > 0) {
             badgeText = "ACTIVE";
             badgeColor = clientCfg.hudTheme.primaryColor;
         } else {
             badgeText = Component.translatable(status.getTranslationKey()).getString();
-            badgeColor = 0xF87171; // Rose
+            badgeColor = 0xF87171;
         }
 
         ShapeRegistry registry = ShapeRegistry.getInstance();
@@ -157,7 +154,6 @@ public final class QMineHudOverlay {
             }
         }
 
-        // Layout measurements
         int maxTextWidth = 120;
         for (Component c : lines) {
             int w = font.width(c);
@@ -170,7 +166,6 @@ public final class QMineHudOverlay {
         int cardWidth = maxTextWidth + padding * 2;
         int cardHeight = lines.size() * (font.lineHeight + 2) + padding * 2;
 
-        // Position by anchor
         int screenW = graphics.guiWidth();
         int screenH = graphics.guiHeight();
         int insetX = clientCfg.overlayInsetX;
@@ -197,11 +192,9 @@ public final class QMineHudOverlay {
         int borderAlpha = (int) (0x66 * alphaFade);
         int borderRgb = lavaHazard ? 0xFF0000 : (canMine ? clientCfg.hudTheme.primaryColor : badgeColor);
 
-        // Dark card background & subtle glowing border
         graphics.fill(0, 0, cardWidth, cardHeight, (bgAlpha << 24) | 0x0F172A);
         graphics.outline(0, 0, cardWidth, cardHeight, (borderAlpha << 24) | borderRgb);
 
-        // Cooldown bar
         float cdFrac = CooldownTracker.getCooldownRemaining(mc.player);
         if (cdFrac < 1.0f) {
             int barWidth = (int) ((cardWidth - 4) * cdFrac);
@@ -209,7 +202,6 @@ public final class QMineHudOverlay {
             graphics.fill(2, cardHeight - 4, 2 + barWidth, cardHeight - 2, (barAlpha << 24) | 0x38BDF8);
         }
 
-        // Draw text lines
         int textY = padding;
         int textAlpha = (int) (0xFF * alphaFade);
 
@@ -219,11 +211,11 @@ public final class QMineHudOverlay {
             if (i == 0) {
                 color = (textAlpha << 24) | (lavaHazard ? 0xF87171 : 0xF8FAFC);
             } else if (line.getString().contains("> ")) {
-                color = (textAlpha << 24) | clientCfg.hudTheme.primaryColor; // Themed active mode
+                color = (textAlpha << 24) | clientCfg.hudTheme.primaryColor;
             } else if (line.getString().contains("Blocks")) {
-                color = (textAlpha << 24) | clientCfg.hudTheme.secondaryColor; // Themed block count
+                color = (textAlpha << 24) | clientCfg.hudTheme.secondaryColor;
             } else {
-                color = (textAlpha << 24) | 0x94A3B8; // Slate grey
+                color = (textAlpha << 24) | 0x94A3B8;
             }
 
             graphics.text(font, line, padding, textY, color, true);

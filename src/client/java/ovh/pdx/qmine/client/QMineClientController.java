@@ -133,13 +133,11 @@ public final class QMineClientController {
         if (keyPressed && (amountY != 0 || amountX != 0)) {
             boolean increase = amountY > 0D || amountX > 0D;
 
-            // Shift (or Alt) + ~ + Scroll: locked strictly to size change, NEVER menu
             if (isSizeModifierDown() || ConfigManager.getClientConfig().lockScrollToSize) {
                 ClientPacketDistributor.sendToServer(new ShapeResizePayload(increase));
                 return true;
             }
 
-            // Normal un-shifted scroll: cycles shape menu
             ClientPacketDistributor.sendToServer(new ModeChangedPayload(!increase));
             return true;
         }

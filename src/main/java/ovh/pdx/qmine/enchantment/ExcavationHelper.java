@@ -78,7 +78,6 @@ public final class ExcavationHelper {
 
         int maxLevel = 0;
 
-        // 1. Regular enchantments
         ItemEnchantments enchantments = stack.get(DataComponents.ENCHANTMENTS);
         if (enchantments != null && !enchantments.isEmpty()) {
             for (var entry : enchantments.entrySet()) {
@@ -88,7 +87,6 @@ public final class ExcavationHelper {
             }
         }
 
-        // 2. Stored enchantments (enchanted books)
         ItemEnchantments stored = stack.get(DataComponents.STORED_ENCHANTMENTS);
         if (stored != null && !stored.isEmpty()) {
             for (var entry : stored.entrySet()) {
@@ -98,7 +96,6 @@ public final class ExcavationHelper {
             }
         }
 
-        // 3. Fallback to stack.getEnchantments()
         if (maxLevel <= 0) {
             ItemEnchantments allEnch = stack.getEnchantments();
             if (allEnch != null && !allEnch.isEmpty()) {
