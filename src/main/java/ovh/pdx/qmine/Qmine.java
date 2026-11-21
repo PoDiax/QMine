@@ -84,6 +84,11 @@ public class Qmine {
 
         QMineNetworking.register();
 
+        net.minecraftforge.fml.DistExecutor.unsafeRunWhenOn(
+                net.minecraftforge.api.distmarker.Dist.CLIENT,
+                () -> () -> ovh.pdx.qmine.client.forge.QmineForgeClient.init(modEventBus)
+        );
+
         MinecraftForge.EVENT_BUS.addListener(this::onServerStopping);
         MinecraftForge.EVENT_BUS.addListener(this::onServerTick);
         MinecraftForge.EVENT_BUS.addListener(this::onLevelLoad);

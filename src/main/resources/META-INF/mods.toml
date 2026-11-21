@@ -24,3 +24,9 @@ logoFile="assets/qmine/icon.png"
     versionRange="[1.20.1,1.21)"
     ordering="NONE"
     side="BOTH"
+
+[[mixins]]
+config="qmine.mixins.json"
+
+[[mixins]]
+config="qmine.client.mixins.json"
