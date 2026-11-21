@@ -26,3 +26,4 @@ Thumbs.db
 # Development temp files
 sources_for_dev/
 *.log
+output/
