@@ -70,7 +70,7 @@ public class StaircaseTunnelShape implements Shape {
 
         Direction right = horizontalDir.getClockWise();
 
-        // Looking up ascends (+1 Y), looking down or neutral descends (-1 Y)
+        // Pitch up ascends, otherwise descends
         int yDir = -1;
         if (context.player() != null && context.player().getXRot() < -15.0F) {
             yDir = 1;
@@ -89,7 +89,6 @@ public class StaircaseTunnelShape implements Shape {
                 int lateralOffset = (radius == 2) ? (w - 1) : w;
                 BlockPos colPos = stepBase.relative(right, lateralOffset);
 
-                // 3 blocks high clearance for smooth sprinting up/down stairs
                 for (int h = 0; h < 3; h++) {
                     BlockPos pos = colPos.above(h);
                     if (context.check(pos)) {

@@ -69,12 +69,10 @@ public final class TreeHarvestHandler {
             return HarvestResult.IGNORED;
         }
 
-        // 0. Check if this is a fallen tree on the ground (from Falling Blocks mode)
         if (FallenTreeTracker.getInstance().isFallenLog(level, originPos)) {
             return harvestFallenTree(level, originPos, originLog, player, config);
         }
 
-        // 1. Require axe if configured
         if (config.treeHarvesterRequireAxe) {
             ItemStack mainHand = player.getMainHandItem();
             if (mainHand.isEmpty() || (!mainHand.is(ItemTags.AXES) && !mainHand.isDamageableItem())) {
@@ -82,13 +80,10 @@ public final class TreeHarvestHandler {
             }
         }
 
-        // 2. Tool break protection check before starting
         if (BlockBreakHandler.isToolTooDamaged(player.getMainHandItem())) {
             return HarvestResult.IGNORED;
         }
 
-        // 3. Scan and strictly verify natural tree (FallingTree-inspired architecture)
-        // Automatically rejects player-placed logs, building structures, pillars, and canopy-less poles
         Optional<NaturalTree> optTree = NaturalTreeScanner.scan(level, originPos, config.treeHarvesterMaxLogs);
         if (optTree.isEmpty()) {
             return HarvestResult.IGNORED;
@@ -179,7 +174,6 @@ public final class TreeHarvestHandler {
             setHarvesting(true);
             qmine.getDropsAccumulator().start();
 
-            // HARVEST LOGS ONLY - Leaves are never touched or destroyed by the harvester!
             for (BlockPos logPos : tree.logs()) {
                 BlockState targetState = level.getBlockState(logPos);
                 if (!targetState.is(BlockTags.LOGS)) {
@@ -220,12 +214,10 @@ public final class TreeHarvestHandler {
                 level.sendParticles(ParticleTypes.HAPPY_VILLAGER, originPos.getX() + 0.5, originPos.getY() + 0.5, originPos.getZ() + 0.5, 6, 0.4, 0.4, 0.4, 0.05);
             }
 
-            // Replant sapling at base soil if configured (NO LEAVES TOUCHED)
             if (config.treeHarvesterAutoReplant) {
                 replantSaplingAtBase(level, tree.lowestLog(), originLog);
             }
 
-            // Trigger fast natural leaf decay on the tree canopy
             if (config.treeHarvesterFastLeafDecay) {
                 FastLeafDecayHandler.getInstance().scheduleDecay(level, tree.leaves());
             }
@@ -247,7 +239,7 @@ public final class TreeHarvestHandler {
                 continue;
             }
             if (pos.getY() == lowestY) {
-                // Instantly break any other base logs at the lowest level so the trunk can shift down
+                // Break other base logs so trunk can shift down cleanly
                 PlacedLogTracker.getInstance().removePlaced(level, pos);
                 try {
                     setHarvesting(true);
@@ -304,7 +296,6 @@ public final class TreeHarvestHandler {
                 continue;
             }
 
-            // Durability and food exhaustion check
             if (!player.isCreative()) {
                 if (BlockBreakHandler.isToolTooDamaged(player.getMainHandItem())) {
                     break;
@@ -323,7 +314,6 @@ public final class TreeHarvestHandler {
             FallingBlockEntity entity = FallingBlockEntity.fall(level, logPos, state);
             entity.dropItem = false;
 
-            // Outward tumble momentum away from tree trunk and in player's forward direction
             double relX = logPos.getX() - originPos.getX();
             double relZ = logPos.getZ() - originPos.getZ();
             double dx = relX * 0.10 + playerFacing.getStepX() * 0.08 + (level.getRandom().nextDouble() - 0.5) * 0.06;
@@ -345,7 +335,6 @@ public final class TreeHarvestHandler {
                 level.playSound(null, originPos, SoundEvents.WOOD_BREAK, SoundSource.BLOCKS, 1.0f, 0.7f);
             }
         } else {
-            // Single log tree
             if (config.treeHarvesterFastLeafDecay) {
                 FastLeafDecayHandler.getInstance().scheduleDecay(level, tree.leaves());
             }
@@ -354,7 +343,7 @@ public final class TreeHarvestHandler {
             }
         }
 
-        // Return ALLOW_EVENT so Minecraft destroys originPos naturally on this tick without re-entering
+        // Let vanilla break origin block to trigger natural item drops
         return HarvestResult.ALLOW_EVENT;
     }
 
@@ -378,7 +367,6 @@ public final class TreeHarvestHandler {
             return HarvestResult.ALLOW_EVENT;
         }
 
-        // Sort outward from the cut origin point for a natural ripple domino cascade
         remainingLogs.sort(Comparator.comparingDouble(pos -> pos.distSqr(originPos)));
 
         CascadeTreeTracker.getInstance().addCascade(new CascadeTreeTracker.ActiveCascade(
@@ -389,7 +377,7 @@ public final class TreeHarvestHandler {
             level.playSound(null, originPos, SoundEvents.WOOD_BREAK, SoundSource.BLOCKS, 1.0f, 0.8f);
         }
 
-        // Return ALLOW_EVENT so Minecraft destroys originPos naturally on this tick without re-entering
+        // Let vanilla break origin block to trigger natural item drops
         return HarvestResult.ALLOW_EVENT;
     }
 

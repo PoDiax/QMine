@@ -41,14 +41,12 @@ public final class QMineNetworking {
 
         registrar.playToClient(SendShapePayload.TYPE, SendShapePayload.STREAM_CODEC, (payload, context) -> {
             context.enqueueWork(() -> {
-                // Client handler
                 ClientPayloadReceiver.handleSendShape(payload);
             });
         });
 
         registrar.playToClient(SyncCooldownPayload.TYPE, SyncCooldownPayload.STREAM_CODEC, (payload, context) -> {
             context.enqueueWork(() -> {
-                // Client handler
                 ClientPayloadReceiver.handleSyncCooldown(payload);
             });
         });

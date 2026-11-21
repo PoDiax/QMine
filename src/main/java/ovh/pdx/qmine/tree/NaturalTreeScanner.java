@@ -13,8 +13,7 @@ import ovh.pdx.qmine.handler.PlacedLogTracker;
 import java.util.*;
 
 /**
- * Natural tree scanner and structural validator inspired by FallingTree's tree detection engine.
- * Ensures only natural trees are felled while protecting player houses, constructions, and placed blocks.
+ * Scans connected logs and verifies natural tree structure before felling.
  */
 public final class NaturalTreeScanner {
     private static final int HORIZONTAL_SEARCH_RADIUS = 16;
@@ -111,7 +110,6 @@ public final class NaturalTreeScanner {
             return Optional.empty();
         }
 
-        // 1. Instantly reject player-placed origin log
         if (PlacedLogTracker.getInstance().isPlayerPlaced(level, originPos)) {
             return Optional.empty();
         }
@@ -129,16 +127,13 @@ public final class NaturalTreeScanner {
         while (!queue.isEmpty()) {
             BlockPos current = queue.poll();
 
-            // A. Check for adjacent player building materials (house walls, roofs, fences, etc.)
             for (Direction dir : Direction.values()) {
                 BlockState adjacent = level.getBlockState(current.relative(dir));
                 if (isPlayerBuildingBlock(adjacent)) {
-                    // Structure safety shield: log touches a player building! Abort felling.
                     return Optional.empty();
                 }
             }
 
-            // B. Scan candidate leaves attached to the canopy around this log
             for (int dx = -LEAF_SEARCH_DISTANCE; dx <= LEAF_SEARCH_DISTANCE; dx++) {
                 for (int dy = -1; dy <= LEAF_SEARCH_DISTANCE; dy++) {
                     for (int dz = -LEAF_SEARCH_DISTANCE; dz <= LEAF_SEARCH_DISTANCE; dz++) {
@@ -154,7 +149,6 @@ public final class NaturalTreeScanner {
                 }
             }
 
-            // C. Connect adjacent logs upwards and outwards (26-neighborhood)
             for (int x = -1; x <= 1; x++) {
                 for (int y = -1; y <= 1; y++) {
                     for (int z = -1; z <= 1; z++) {
@@ -162,7 +156,6 @@ public final class NaturalTreeScanner {
 
                         BlockPos neighbor = current.offset(x, y, z);
 
-                        // Restrict horizontal radius from origin trunk to avoid sprawling forest loops
                         if (Math.abs(neighbor.getX() - originPos.getX()) > HORIZONTAL_SEARCH_RADIUS
                                 || Math.abs(neighbor.getZ() - originPos.getZ()) > HORIZONTAL_SEARCH_RADIUS) {
                             continue;
@@ -174,7 +167,6 @@ public final class NaturalTreeScanner {
 
                         BlockState neighborState = level.getBlockState(neighbor);
                         if (neighborState.is(BlockTags.LOGS) && (neighborState.getBlock() == originBlock || neighborState.is(BlockTags.LOGS))) {
-                            // If any connected log is tracked as player-placed, abort (man-made build)
                             if (tracker.isPlayerPlaced(level, neighbor)) {
                                 return Optional.empty();
                             }
@@ -183,7 +175,6 @@ public final class NaturalTreeScanner {
                             queue.add(neighbor);
 
                             if (discoveredLogs.size() > maxLogs) {
-                                // Exceeds max tree scan size: abort safely
                                 return Optional.empty();
                             }
                         }
@@ -192,14 +183,11 @@ public final class NaturalTreeScanner {
             }
         }
 
-        // ==================== NATURAL TREE VALIDATION ====================
 
-        // 1. Must have sufficient natural leaves in the canopy
         if (discoveredLeaves.size() < MIN_CANOPY_LEAVES) {
             return Optional.empty();
         }
 
-        // 2. Identify top-most and lowest logs
         BlockPos topMostLog = originPos;
         BlockPos lowestLog = originPos;
         for (BlockPos log : discoveredLogs) {
@@ -211,9 +199,8 @@ public final class NaturalTreeScanner {
             }
         }
 
-        // 3. FallingTree Top Log Crown Check:
-        // A natural tree always has natural leaves directly around its highest trunk/crown log(s).
-        // A player-built pole, mast, or pillar has 0 leaves around its top.
+        // Natural trees have leaves around their crown; pillars/poles do not
+        
         int crownLeaves = 0;
         for (int dx = -2; dx <= 2; dx++) {
             for (int dy = -1; dy <= 2; dy++) {
@@ -229,9 +216,8 @@ public final class NaturalTreeScanner {
             return Optional.empty();
         }
 
-        // 4. Ground Soil Verification:
-        // At least one trunk base log must sit on natural tree soil (dirt, grass, podzol, mud, nylium, moss).
-        // If the structure sits purely on wood planks, cobblestone, or floats in the air, it is not a natural tree.
+        // At least one base log must rest on tree soil
+        
         boolean hasSoil = false;
         for (BlockPos log : discoveredLogs) {
             BlockState groundState = level.getBlockState(log.below());
@@ -244,7 +230,7 @@ public final class NaturalTreeScanner {
             return Optional.empty();
         }
 
-        // Sort logs from top to bottom (descending Y) so tree falls downward naturally
+        // Sort descending Y for top-down harvesting
         List<BlockPos> sortedLogs = new ArrayList<>(discoveredLogs);
         sortedLogs.sort((a, b) -> Integer.compare(b.getY(), a.getY()));
 
