@@ -19,7 +19,6 @@ public final class QMineNetworking {
         PayloadTypeRegistry.playS2C().register(SendShapePayload.TYPE, SendShapePayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(SyncCooldownPayload.TYPE, SyncCooldownPayload.STREAM_CODEC);
 
-        // Server receivers
         ServerPlayNetworking.registerGlobalReceiver(KeyPressedPayload.TYPE, (payload, context) -> {
             ServerPlayer player = context.player();
             context.server().execute(() -> Qmine.getInstance().setKeyPressed(player, payload.pressed()));

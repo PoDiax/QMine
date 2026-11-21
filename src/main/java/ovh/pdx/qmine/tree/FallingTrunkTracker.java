@@ -67,7 +67,6 @@ public final class FallingTrunkTracker {
                 for (TrackedFallingBlock tracked : group.blocks()) {
                     FallingBlockEntity entity = tracked.entity();
 
-                    // Check if block has landed or expired
                     boolean landed = entity.isRemoved()
                             || entity.onGround()
                             || entity.verticalCollision
@@ -77,7 +76,6 @@ public final class FallingTrunkTracker {
                         BlockPos impactPos = entity.blockPosition();
                         BlockPos targetPos = level.getBlockState(impactPos).canBeReplaced() ? impactPos : impactPos.above();
 
-                        // Place as solid fallen log on the ground
                         if (level.getBlockState(targetPos).canBeReplaced()) {
                             level.setBlock(targetPos, tracked.originalState(), Block.UPDATE_ALL);
                             FallenTreeTracker.getInstance().registerFallenLog(level, targetPos);
@@ -87,7 +85,6 @@ public final class FallingTrunkTracker {
 
                         entity.discard();
 
-                        // Impact effects
                         if (cfg.treeFellingEffects) {
                             level.playSound(null, targetPos, SoundEvents.WOOD_PLACE, SoundSource.BLOCKS, 0.9f, 0.8f);
                         }
@@ -102,7 +99,6 @@ public final class FallingTrunkTracker {
                 }
 
                 if (remainingBlocks.isEmpty()) {
-                    // All falling logs have landed: trigger leaf decay and replant
                     if (cfg.treeHarvesterFastLeafDecay) {
                         FastLeafDecayHandler.getInstance().scheduleDecay(level, group.leaves());
                     }

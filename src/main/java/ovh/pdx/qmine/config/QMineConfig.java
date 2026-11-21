@@ -6,13 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class QMineConfig {
-    // Energy & Costs
     public boolean consumeFood = true;
     public double exhaustionPerBlock = 20.0;
     public boolean consumeExperience = false;
     public double experiencePerBlock = 1.0;
 
-    // Drop Handling
     public enum DropCollectionMode {
         ORIGIN,
         MAGNET,
@@ -20,7 +18,6 @@ public class QMineConfig {
     }
     public DropCollectionMode dropCollection = DropCollectionMode.MAGNET;
 
-    // Limits & Protection
     public int maxBlocks = 64;
     public boolean requireTool = false;
     public boolean requireValidToolForBlock = false;
@@ -28,14 +25,12 @@ public class QMineConfig {
     public int preventToolBreakDurability = 1;
     public boolean cancelOnBlockBreakFail = false;
 
-    // Safety & Advanced Mining
     public boolean antiLavaShield = true;
     public boolean autoReplaceLava = true;
     public boolean cascadingSoundPitch = true;
     public boolean autoToolSwap = true;
     public boolean requireEnchantment = false;
 
-    // Tree & Mining Automation Upgrades
     public boolean treeHarvesterEnabled = true;
     public TreeFellingAnimation treeFellingAnimation = TreeFellingAnimation.INSTANT;
     public boolean treeHarvesterRequireAxe = true;
@@ -63,14 +58,12 @@ public class QMineConfig {
     }
     public TorchPlacementSide autoTorchSide = TorchPlacementSide.FLOOR;
 
-    // Right-Click Interactions
     public boolean rightClickAxe = true;
     public boolean rightClickShovel = true;
     public boolean rightClickHoe = true;
     public boolean rightClickHarvesting = true;
     public boolean singleCropHarvesting = true;
 
-    // Vanilla / Server-Only Client Support
     public boolean vanillaClientSupport = true;
     public enum VanillaActivation {
         SNEAK,
@@ -81,7 +74,6 @@ public class QMineConfig {
     public boolean vanillaOresOnly = true;
     public boolean vanillaWelcomeMessage = true;
 
-    // Merge Tags for Shapes
     public List<String> mergeTagsShapeless = new ArrayList<>(List.of(
             "minecraft:base_stone_overworld",
             "minecraft:base_stone_nether",

@@ -37,7 +37,6 @@ public class QMineConfigScreen extends Screen {
         int rightColX = this.width / 2 + 5;
         int startY = this.height / 6;
 
-        // 1. Through-Wall Outline (X-Ray Preview)
         var wallBtn = CycleButton.onOffBuilder(clientCfg.renderThroughWalls)
                 .create(leftColX, startY, buttonWidth, buttonHeight, Component.literal("Through Walls"),
                         (button, value) -> clientCfg.renderThroughWalls = value);
@@ -46,7 +45,6 @@ public class QMineConfigScreen extends Screen {
         )));
         addRenderableWidget(wallBtn);
 
-        // 2. Show Block Grid / Slices
         var gridBtn = CycleButton.onOffBuilder(clientCfg.showBlockGrid)
                 .create(rightColX, startY, buttonWidth, buttonHeight, Component.literal("Block Grid"),
                         (button, value) -> {
@@ -58,7 +56,6 @@ public class QMineConfigScreen extends Screen {
         )));
         addRenderableWidget(gridBtn);
 
-        // 3. Lock Scroll to Size Change
         var lockScrollBtn = CycleButton.onOffBuilder(clientCfg.lockScrollToSize)
                 .create(leftColX, startY + spacing, buttonWidth, buttonHeight, Component.literal("Scroll Changes Size"),
                         (button, value) -> clientCfg.lockScrollToSize = value);
@@ -67,7 +64,6 @@ public class QMineConfigScreen extends Screen {
         )));
         addRenderableWidget(lockScrollBtn);
 
-        // 4. Require Active Key for Cycling
         var keyCycleBtn = CycleButton.onOffBuilder(clientCfg.requireActiveKeyForCycling)
                 .create(leftColX, startY + spacing * 2, buttonWidth, buttonHeight, Component.literal("Hold Key to Cycle"),
                         (button, value) -> clientCfg.requireActiveKeyForCycling = value);
@@ -76,7 +72,6 @@ public class QMineConfigScreen extends Screen {
         )));
         addRenderableWidget(keyCycleBtn);
 
-        // 6. Overlay Anchor Position
         
         
         var anchorBtn = CycleButton.<QMineClientConfig.OverlayAnchor>builder(anchor -> Component.literal(anchor.name()))
@@ -87,7 +82,6 @@ public class QMineConfigScreen extends Screen {
         anchorBtn.setTooltip(Tooltip.create(Component.literal("Screen corner/position for the QMine HUD overlay.")));
         addRenderableWidget(anchorBtn);
 
-        // 7. Tree Harvester
         var treeBtn = CycleButton.onOffBuilder(ConfigManager.getServerConfig().treeHarvesterEnabled)
                 .create(leftColX, startY + spacing * 3, buttonWidth, buttonHeight, Component.literal("Tree Harvester"),
                         (button, value) -> ConfigManager.getServerConfig().treeHarvesterEnabled = value);
@@ -96,7 +90,6 @@ public class QMineConfigScreen extends Screen {
         )));
         addRenderableWidget(treeBtn);
 
-        // 8. Felling Animation Style
         
         
         var animBtn = CycleButton.<ovh.pdx.qmine.tree.TreeFellingAnimation>builder(anim -> Component.literal(anim.displayName))
@@ -109,7 +102,6 @@ public class QMineConfigScreen extends Screen {
         )));
         addRenderableWidget(animBtn);
 
-        // 9. Instant Leaf Decay
         var decayBtn = CycleButton.onOffBuilder(ConfigManager.getServerConfig().instantLeafDecay)
                 .create(leftColX, startY + spacing * 4, buttonWidth, buttonHeight, Component.literal("Instant Leaf Decay"),
                         (button, value) -> ConfigManager.getServerConfig().instantLeafDecay = value);
@@ -118,7 +110,6 @@ public class QMineConfigScreen extends Screen {
         )));
         addRenderableWidget(decayBtn);
 
-        // 10. Play Leaf Break Sounds
         var leafSoundBtn = CycleButton.onOffBuilder(ConfigManager.getServerConfig().leafDecaySounds)
                 .create(rightColX, startY + spacing * 4, buttonWidth, buttonHeight, Component.literal("Leaf Decay Sounds"),
                         (button, value) -> ConfigManager.getServerConfig().leafDecaySounds = value);
@@ -127,7 +118,6 @@ public class QMineConfigScreen extends Screen {
         )));
         addRenderableWidget(leafSoundBtn);
 
-        // 11. Key Binds Configuration
         var keyBindsBtn = Button.builder(Component.literal("Key Binds..."), button -> {
             if (this.minecraft != null) {
                 
@@ -140,7 +130,6 @@ public class QMineConfigScreen extends Screen {
         )));
         addRenderableWidget(keyBindsBtn);
 
-        // Done button
         addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> onClose())
                 .bounds(this.width / 2 - 100, startY + spacing * 6 + 4, 200, 20)
                 .build()
