@@ -20,9 +20,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * High-performance, natural fast leaf decay handler inspired by FallingTree and FastLeafDecay.
- * Accelerates natural vanilla leaf decay on disconnected tree canopies without breaking player-placed leaves
- * or touching leaves connected to neighboring trees.
+ * Accelerates leaf decay on felled trees.
  */
 public final class FastLeafDecayHandler {
     private static final FastLeafDecayHandler INSTANCE = new FastLeafDecayHandler();
@@ -55,7 +53,6 @@ public final class FastLeafDecayHandler {
 
         for (BlockPos leafPos : canopyLeaves) {
             if (queued.add(leafPos)) {
-                // Staggered cascade: 1 to 12 ticks delay
                 int delay = 1 + random.nextInt(12);
                 list.add(new PendingDecay(leafPos, delay));
             }
@@ -106,18 +103,16 @@ public final class FastLeafDecayHandler {
                     continue;
                 }
 
-                // Never decay player-placed leaves
+                // Ignore player-placed leaves
                 if (state.hasProperty(LeavesBlock.PERSISTENT) && state.getValue(LeavesBlock.PERSISTENT)) {
                     continue;
                 }
 
                 boolean shouldDecay = false;
 
-                // 1. If distance is already 7 (vanilla disconnected)
                 if (state.hasProperty(LeavesBlock.DISTANCE) && state.getValue(LeavesBlock.DISTANCE) == 7) {
                     shouldDecay = true;
                 } else {
-                    // Check if there are any logs within connecting distance (<= 4 blocks)
                     boolean hasNearbyLog = false;
                     for (int dx = -4; dx <= 4 && !hasNearbyLog; dx++) {
                         for (int dy = -4; dy <= 4 && !hasNearbyLog; dy++) {
@@ -137,11 +132,9 @@ public final class FastLeafDecayHandler {
                 }
 
                 if (shouldDecay) {
-                    // Authentic vanilla decay: drop resources with vanilla loot tables and remove block
                     Block.dropResources(state, level, pos);
                     level.removeBlock(pos, false);
 
-                    // Configurable decay particles and sound
                     QMineConfig cfg = ConfigManager.getServerConfig();
                     if (cfg.leafDecayParticles && cfg.leafDecaySounds) {
                         level.levelEvent(2001, pos, Block.getId(state));
@@ -151,7 +144,6 @@ public final class FastLeafDecayHandler {
                         level.sendParticles(new BlockParticleOption(ParticleTypes.BLOCK, state), pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, 10, 0.25, 0.25, 0.25, 0.15);
                     }
 
-                    // Propagate decay to neighboring leaves
                     if (queued != null) {
                         for (Direction dir : Direction.values()) {
                             BlockPos neighbor = pos.relative(dir);

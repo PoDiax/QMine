@@ -56,7 +56,6 @@ public final class QMineOutlineRenderer {
         List<CachedEdge> edges = new ArrayList<>();
 
         if (ConfigManager.getClientConfig().showBlockGrid) {
-            // Individual block boxes to clearly show how many blocks deep/wide the shape is
             for (BlockPos pos : renderList) {
                 double relX = pos.getX() - origin.getX();
                 double relY = pos.getY() - origin.getY();
@@ -68,7 +67,6 @@ public final class QMineOutlineRenderer {
                 );
             }
         } else {
-            // Merged shape silhouette
             Collection<VoxelShape> shapes = new ArrayList<>();
             for (AABB aabb : ShapeMerger.merge(renderList, origin)) {
                 shapes.add(Shapes.create(aabb.inflate(0.005D)));
@@ -109,13 +107,11 @@ public final class QMineOutlineRenderer {
         Matrix4f matrix = poseStack.last().pose();
         org.joml.Matrix3f normalMatrix = poseStack.last().normal();
 
-        // 1. Crisp white outer lines (foreground / depth-tested)
         VertexConsumer solidBuffer = consumers.getBuffer(RenderType.lines());
         for (CachedEdge edge : edges) {
             drawEdge(solidBuffer, matrix, normalMatrix, edge, 255, 255, 255, 255);
         }
 
-        // 2. Translucent wireframe through blocks
         var clientCfg = ConfigManager.getClientConfig();
         if (clientCfg.renderThroughWalls && clientCfg.previewLineAlpha > 0) {
             int alpha = clientCfg.previewLineAlpha;

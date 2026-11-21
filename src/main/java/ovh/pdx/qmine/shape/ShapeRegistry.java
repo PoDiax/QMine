@@ -24,7 +24,6 @@ public final class ShapeRegistry {
         register(new StripMinerShape());
         register(new RoomShape());
 
-        // Fire Modder API event so other mods can register custom shapes
         ovh.pdx.qmine.api.event.QMineShapeEvents.REGISTER.invoker().registerShapes(this);
     }
 

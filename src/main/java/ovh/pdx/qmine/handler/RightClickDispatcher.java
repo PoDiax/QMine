@@ -20,7 +20,6 @@ public final class RightClickDispatcher {
         handlers.add(FarmlandConversionHandler.INSTANCE);
         handlers.add(CropHarvestingHandler.INSTANCE);
 
-        // Fire Modder API event so other mods can register custom right-click handlers
         QMineRightClickEvents.REGISTER.invoker().registerHandlers(this);
     }
 

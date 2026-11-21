@@ -49,7 +49,6 @@ public final class AutoTorchHandler {
         List<BlockPos> placedInSession = new ArrayList<>();
 
         if (isTunnelOrRoom) {
-            // Group mined positions by forward distance (depth) along the tunnel/room
             Map<Integer, List<BlockPos>> depthLayers = new TreeMap<>();
             for (BlockPos pos : minedPositions) {
                 int depth = (pos.getX() - originPos.getX()) * forward.getStepX()
@@ -65,7 +64,6 @@ public final class AutoTorchHandler {
                     continue;
                 }
 
-                // If light check is disabled, fall back to pure mechanical spacing
                 if (!config.autoTorchCheckLight && (depth % spacing != 0)) {
                     continue;
                 }
@@ -73,11 +71,10 @@ public final class AutoTorchHandler {
                 List<BlockPos> layer = entry.getValue();
                 boolean placed = placeInDepthLayer(level, layer, originPos, side, player, config, placedInSession);
                 if (!placed && !hasTorches(player)) {
-                    break; // Out of torches in inventory
+                    break; 
                 }
             }
         } else {
-            // General mining (Floor excavation, Shapeless ore veins, Cuboid, etc.)
             List<BlockPos> floorSpots = findFloorCandidates(level, minedPositions);
             for (BlockPos p : floorSpots) {
                 if (config.autoTorchCheckLight) {
@@ -104,7 +101,6 @@ public final class AutoTorchHandler {
 
     private boolean placeInDepthLayer(ServerLevel level, List<BlockPos> layer, BlockPos originPos, Direction side,
                                       ServerPlayer player, QMineConfig config, List<BlockPos> placedInSession) {
-        // 1. Find floor candidates in this layer
         List<BlockPos> floorCandidates = findFloorCandidates(level, layer);
         BlockPos bestFloor = null;
         if (!floorCandidates.isEmpty()) {
@@ -119,14 +115,12 @@ public final class AutoTorchHandler {
             }
         }
 
-        // 2. Find wall candidates in this layer
         List<BlockPos> wallCandidates = findWallCandidates(level, layer, side);
         BlockPos bestWall = null;
         if (!wallCandidates.isEmpty()) {
             bestWall = wallCandidates.get(0);
         }
 
-        // 3. Determine target pos for light checking based on chosen placement mode
         BlockPos targetPos;
         if (config.autoTorchSide == QMineConfig.TorchPlacementSide.FLOOR) {
             targetPos = (bestFloor != null) ? bestFloor : bestWall;
@@ -138,10 +132,9 @@ public final class AutoTorchHandler {
             return false;
         }
 
-        // Check if area is already sufficiently lit
         if (config.autoTorchCheckLight) {
             if (isAreaLit(level, targetPos, config.autoTorchRadius, config.autoTorchLightLevel, placedInSession)) {
-                return true; // Already lit!
+                return true; 
             }
         }
 
@@ -155,7 +148,6 @@ public final class AutoTorchHandler {
         BlockPos placedPos = null;
 
         if (config.autoTorchSide == QMineConfig.TorchPlacementSide.FLOOR) {
-            // Floor placement first, fallback to wall if floor has gap
             if (bestFloor != null && tryPlaceFloorTorch(level, bestFloor, isSoul)) {
                 placed = true;
                 placedPos = bestFloor;
@@ -164,7 +156,6 @@ public final class AutoTorchHandler {
                 placedPos = bestWall;
             }
         } else if (config.autoTorchSide == QMineConfig.TorchPlacementSide.AUTO) {
-            // Smart: prefer wall to keep walkway open, fallback to floor
             if (bestWall != null && tryPlaceWallTorch(level, bestWall, side, isSoul)) {
                 placed = true;
                 placedPos = bestWall;
@@ -173,7 +164,6 @@ public final class AutoTorchHandler {
                 placedPos = bestFloor;
             }
         } else {
-            // RIGHT or LEFT wall first, fallback to floor
             if (bestWall != null && tryPlaceWallTorch(level, bestWall, side, isSoul)) {
                 placed = true;
                 placedPos = bestWall;
@@ -217,7 +207,6 @@ public final class AutoTorchHandler {
                 }
             }
         }
-        // Prefer middle/eye level height
         candidates.sort((a, b) -> Integer.compare(b.getY(), a.getY()));
         return candidates;
     }
@@ -259,21 +248,18 @@ public final class AutoTorchHandler {
     }
 
     public static boolean isAreaLit(ServerLevel level, BlockPos pos, int radius, int lightThreshold, List<BlockPos> placedInSession) {
-        // 1. Check recently placed torches in this mining session within radius
         for (BlockPos placed : placedInSession) {
             if (placed.closerThan(pos, radius)) {
                 return true;
             }
         }
 
-        // 2. Check local brightness at target position
         int rawLight = level.getMaxLocalRawBrightness(pos);
         int blockLight = level.getBrightness(LightLayer.BLOCK, pos);
         if (rawLight > lightThreshold || blockLight > lightThreshold) {
             return true;
         }
 
-        // 3. Scan a radius of blocks around pos for existing torches or light sources
         int r = Math.min(radius, 12);
         BlockPos.MutableBlockPos mpos = new BlockPos.MutableBlockPos();
         for (int dx = -r; dx <= r; dx++) {

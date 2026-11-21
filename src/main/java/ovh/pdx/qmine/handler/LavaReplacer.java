@@ -72,7 +72,6 @@ public final class LavaReplacer {
     }
 
     public static ItemStack takeFillerBlock(ServerPlayer player, DropsAccumulator accumulator) {
-        // 1. Try from freshly mined drops first (e.g. cobblestone we just broke!)
         if (accumulator != null && accumulator.isActive()) {
             ItemStack fromDrops = accumulator.getItemCollector().takeFirstMatching(LavaReplacer::isFillerBlock);
             if (!fromDrops.isEmpty()) {
@@ -80,12 +79,10 @@ public final class LavaReplacer {
             }
         }
 
-        // 2. Creative mode gets free cobblestone
         if (player.isCreative()) {
             return new ItemStack(Blocks.COBBLESTONE);
         }
 
-        // 3. Search player inventory
         for (int i = 0; i < player.getInventory().getContainerSize(); i++) {
             ItemStack stack = player.getInventory().getItem(i);
             if (!stack.isEmpty() && isFillerBlock(stack)) {

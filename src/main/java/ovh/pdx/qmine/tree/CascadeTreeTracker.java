@@ -72,7 +72,7 @@ public final class CascadeTreeTracker {
                     continue;
                 }
 
-                // Paced cascade: break 1 log every 2 ticks (100ms) for visible rhythmic domino effect
+                // Break 1 log every 2 ticks
                 cascade.delayTicks++;
                 if (cascade.delayTicks < 2) {
                     remaining.add(cascade);
@@ -96,7 +96,6 @@ public final class CascadeTreeTracker {
                         break;
                     }
 
-                    // Domino step sound & particles
                     if (cfg.treeFellingEffects) {
                         float pitch = 0.75f + Math.min(0.6f, (float) (logPos.getY() - cascade.lowestLog.getY()) * 0.06f);
                         level.playSound(null, logPos, SoundEvents.WOOD_BREAK, SoundSource.BLOCKS, 0.9f, pitch);
@@ -120,11 +119,10 @@ public final class CascadeTreeTracker {
                         }
                     }
 
-                    break; // Break 1 log per step for smooth domino pacing
+                    break; 
                 }
 
                 if (logs.isEmpty()) {
-                    // Cascade complete: trigger leaf decay and replant
                     if (cfg.treeHarvesterFastLeafDecay) {
                         FastLeafDecayHandler.getInstance().scheduleDecay(level, cascade.leaves);
                     }
