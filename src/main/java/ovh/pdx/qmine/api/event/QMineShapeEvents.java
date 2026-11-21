@@ -1,7 +1,7 @@
 package ovh.pdx.qmine.api.event;
 
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.event.EventFactory;
+import ovh.pdx.qmine.api.event.compat.Event;
+import ovh.pdx.qmine.api.event.compat.EventFactory;
 import ovh.pdx.qmine.shape.ShapeRegistry;
 
 public final class QMineShapeEvents {

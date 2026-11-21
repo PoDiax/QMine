@@ -1,49 +1,68 @@
 package ovh.pdx.qmine.net;
 
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import ovh.pdx.qmine.Qmine;
 
 public final class QMineNetworking {
     private QMineNetworking() {
     }
 
-    public static void initCommon() {
-        // C2S payloads
-        PayloadTypeRegistry.serverboundPlay().register(KeyPressedPayload.TYPE, KeyPressedPayload.STREAM_CODEC);
-        PayloadTypeRegistry.serverboundPlay().register(ModeChangedPayload.TYPE, ModeChangedPayload.STREAM_CODEC);
-        PayloadTypeRegistry.serverboundPlay().register(ShapeResizePayload.TYPE, ShapeResizePayload.STREAM_CODEC);
+    public static void registerPayloads(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar("1.0.1");
 
-        // S2C payloads (register large for SendShapePayload to support up to 64k positions)
-        PayloadTypeRegistry.clientboundPlay().registerLarge(SendShapePayload.TYPE, SendShapePayload.STREAM_CODEC, 1048576);
-        PayloadTypeRegistry.clientboundPlay().register(SyncCooldownPayload.TYPE, SyncCooldownPayload.STREAM_CODEC);
-
-        // Server receivers
-        ServerPlayNetworking.registerGlobalReceiver(KeyPressedPayload.TYPE, (payload, context) -> {
-            ServerPlayer player = context.player();
-            context.server().execute(() -> Qmine.getInstance().setKeyPressed(player, payload.pressed()));
+        registrar.playToServer(KeyPressedPayload.TYPE, KeyPressedPayload.STREAM_CODEC, (payload, context) -> {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    Qmine.getInstance().setKeyPressed(player, payload.pressed());
+                }
+            });
         });
 
-        ServerPlayNetworking.registerGlobalReceiver(ModeChangedPayload.TYPE, (payload, context) -> {
-            ServerPlayer player = context.player();
-            context.server().execute(() -> Qmine.getInstance().cycleMode(player, payload.next()));
+        registrar.playToServer(ModeChangedPayload.TYPE, ModeChangedPayload.STREAM_CODEC, (payload, context) -> {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    Qmine.getInstance().cycleMode(player, payload.next());
+                }
+            });
         });
 
-        ServerPlayNetworking.registerGlobalReceiver(ShapeResizePayload.TYPE, (payload, context) -> {
-            ServerPlayer player = context.player();
-            context.server().execute(() -> Qmine.getInstance().resizeMode(player, payload.increase()));
+        registrar.playToServer(ShapeResizePayload.TYPE, ShapeResizePayload.STREAM_CODEC, (payload, context) -> {
+            context.enqueueWork(() -> {
+                if (context.player() instanceof ServerPlayer player) {
+                    Qmine.getInstance().resizeMode(player, payload.increase());
+                }
+            });
+        });
+
+        registrar.playToClient(SendShapePayload.TYPE, SendShapePayload.STREAM_CODEC, (payload, context) -> {
+            context.enqueueWork(() -> {
+                ClientPayloadReceiver.handleSendShape(payload);
+            });
+        });
+
+        registrar.playToClient(SyncCooldownPayload.TYPE, SyncCooldownPayload.STREAM_CODEC, (payload, context) -> {
+            context.enqueueWork(() -> {
+                ClientPayloadReceiver.handleSyncCooldown(payload);
+            });
         });
     }
 
     public static boolean hasClientMod(ServerPlayer player) {
-        return ServerPlayNetworking.canSend(player, SendShapePayload.TYPE);
+        return player.connection != null;
     }
 
-    public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
-        if (hasClientMod(player)) {
-            ServerPlayNetworking.send(player, payload);
+    public static void sendToPlayer(ServerPlayer player, SendShapePayload payload) {
+        if (player != null && player.connection != null) {
+            PacketDistributor.sendToPlayer(player, payload);
+        }
+    }
+
+    public static void sendToPlayer(ServerPlayer player, SyncCooldownPayload payload) {
+        if (player != null && player.connection != null) {
+            PacketDistributor.sendToPlayer(player, payload);
         }
     }
 }

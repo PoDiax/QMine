@@ -1,6 +1,5 @@
 package ovh.pdx.qmine.client.render;
 
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -20,7 +19,7 @@ import ovh.pdx.qmine.tag.QMineTags;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class QMineHudOverlay implements HudElement {
+public final class QMineHudOverlay {
     public static final Identifier ID = Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "hud_overlay");
     private static final QMineHudOverlay INSTANCE = new QMineHudOverlay();
 
@@ -33,8 +32,7 @@ public final class QMineHudOverlay implements HudElement {
         return INSTANCE;
     }
 
-    @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
+    public void render(GuiGraphicsExtractor graphics, DeltaTracker deltaTracker) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.gui.hud.isHidden()) {
             return;

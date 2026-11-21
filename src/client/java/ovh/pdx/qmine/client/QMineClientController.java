@@ -1,8 +1,6 @@
 package ovh.pdx.qmine.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -11,6 +9,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.jspecify.annotations.Nullable;
 import ovh.pdx.qmine.client.render.QMineOutlineRenderer;
 import ovh.pdx.qmine.config.ConfigManager;
@@ -32,23 +31,23 @@ public final class QMineClientController {
 
     private static final QMineClientController INSTANCE = new QMineClientController();
 
-    public final KeyMapping keyActivate = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+    public final KeyMapping keyActivate = new KeyMapping(
             "key.qmine.activate",
             InputConstants.KEY_GRAVE,
             KEY_CATEGORY
-    ));
+    );
 
-    public final KeyMapping keyNext = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+    public final KeyMapping keyNext = new KeyMapping(
             "key.qmine.next_shape",
             InputConstants.KEY_UP,
             KEY_CATEGORY
-    ));
+    );
 
-    public final KeyMapping keyPrev = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+    public final KeyMapping keyPrev = new KeyMapping(
             "key.qmine.prev_shape",
             InputConstants.KEY_DOWN,
             KEY_CATEGORY
-    ));
+    );
 
     private boolean keyPressed = false;
     private boolean canMine = false;
@@ -99,21 +98,6 @@ public final class QMineClientController {
     }
 
     public void initNetworking() {
-        ClientPlayNetworking.registerGlobalReceiver(SendShapePayload.TYPE, (payload, context) -> {
-            context.client().execute(() -> setShape(payload.shapeIndex(), payload.shapeRadius(), payload.positions().orElse(null)));
-        });
-
-        ClientPlayNetworking.registerGlobalReceiver(SyncCooldownPayload.TYPE, (payload, context) -> {
-            context.client().execute(() -> {
-                if (payload.cooldownType() == SyncCooldownPayload.CooldownType.COOLDOWN) {
-                    CooldownTracker.setClientCooldownTicks(payload.timestamp());
-                } else if (payload.cooldownType() == SyncCooldownPayload.CooldownType.LAST_USED) {
-                    if (context.client().player != null) {
-                        CooldownTracker.setLastMineTime(context.client().player, payload.timestamp());
-                    }
-                }
-            });
-        });
     }
 
     public void setShape(int shapeIndex, int shapeRadius, @Nullable List<BlockPos> blocks) {
@@ -151,12 +135,12 @@ public final class QMineClientController {
 
             // Shift (or Alt) + ~ + Scroll: locked strictly to size change, NEVER menu
             if (isSizeModifierDown() || ConfigManager.getClientConfig().lockScrollToSize) {
-                ClientPlayNetworking.send(new ShapeResizePayload(increase));
+                ClientPacketDistributor.sendToServer(new ShapeResizePayload(increase));
                 return true;
             }
 
             // Normal un-shifted scroll: cycles shape menu
-            ClientPlayNetworking.send(new ModeChangedPayload(!increase));
+            ClientPacketDistributor.sendToServer(new ModeChangedPayload(!increase));
             return true;
         }
         return false;
@@ -188,7 +172,7 @@ public final class QMineClientController {
     private void cycleShape(boolean next) {
         boolean requireKey = ConfigManager.getClientConfig().requireActiveKeyForCycling;
         if (!requireKey || keyPressed) {
-            ClientPlayNetworking.send(new ModeChangedPayload(next));
+            ClientPacketDistributor.sendToServer(new ModeChangedPayload(next));
             lastKeyToggleTime = System.currentTimeMillis();
         }
     }
@@ -196,7 +180,7 @@ public final class QMineClientController {
     private void resizeShape(boolean increase) {
         boolean requireKey = ConfigManager.getClientConfig().requireActiveKeyForCycling;
         if (!requireKey || keyPressed) {
-            ClientPlayNetworking.send(new ShapeResizePayload(increase));
+            ClientPacketDistributor.sendToServer(new ShapeResizePayload(increase));
             lastKeyToggleTime = System.currentTimeMillis();
         }
     }
@@ -209,7 +193,7 @@ public final class QMineClientController {
         if (ConfigManager.getClientConfig().activationMode == QMineClientConfig.ActivationMode.TOGGLE) {
             while (keyActivate.consumeClick()) {
                 keyPressed = !keyPressed;
-                ClientPlayNetworking.send(new KeyPressedPayload(keyPressed));
+                ClientPacketDistributor.sendToServer(new KeyPressedPayload(keyPressed));
                 if (!keyPressed) {
                     QMineOutlineRenderer.getInstance().clear();
                     shapeBlocks = Collections.emptyList();
@@ -221,7 +205,7 @@ public final class QMineClientController {
             keyPressed = keyActivate.isDown();
 
             if (keyPressed != previouslyPressed) {
-                ClientPlayNetworking.send(new KeyPressedPayload(keyPressed));
+                ClientPacketDistributor.sendToServer(new KeyPressedPayload(keyPressed));
                 if (!keyPressed) {
                     QMineOutlineRenderer.getInstance().clear();
                     shapeBlocks = Collections.emptyList();

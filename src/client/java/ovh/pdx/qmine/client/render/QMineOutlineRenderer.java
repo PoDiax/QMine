@@ -1,7 +1,6 @@
 package ovh.pdx.qmine.client.render;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -12,6 +11,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.neoforged.neoforge.client.event.SubmitCustomGeometryEvent;
 import org.joml.Matrix4f;
 import org.jspecify.annotations.Nullable;
 import ovh.pdx.qmine.client.QMineClientController;
@@ -83,7 +83,7 @@ public final class QMineOutlineRenderer {
         this.cachedEdges = List.copyOf(edges);
     }
 
-    public void renderInGame(LevelRenderContext context) {
+    public void renderNeoForge(SubmitCustomGeometryEvent event) {
         QMineClientController controller = QMineClientController.getInstance();
         final BlockPos originPos = this.cachedOriginPos;
         final List<CachedEdge> edges = this.cachedEdges;
@@ -99,8 +99,8 @@ public final class QMineOutlineRenderer {
         }
 
         Vec3 camPos = camera.position();
-        PoseStack poseStack = context.poseStack();
-        SubmitNodeCollector collector = context.submitNodeCollector();
+        PoseStack poseStack = event.getPoseStack();
+        SubmitNodeCollector collector = event.getSubmitNodeCollector();
 
         poseStack.pushPose();
         poseStack.translate(
