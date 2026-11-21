@@ -31,6 +31,7 @@ public final class TreeModDetector {
                 found.add(name + " (" + entry.getKey() + ")");
             }
         }
+        
         return found;
     }
 

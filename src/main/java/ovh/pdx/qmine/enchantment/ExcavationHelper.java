@@ -1,74 +1,37 @@
 package ovh.pdx.qmine.enchantment;
 
-import net.minecraft.core.Holder;
-import net.minecraft.core.component.DataComponents;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.ItemEnchantments;
+import ovh.pdx.qmine.compat.IdCompat;
 import ovh.pdx.qmine.tag.QMineTags;
 
 import java.util.Locale;
 
 public final class ExcavationHelper {
-    public static final Identifier EXCAVATING_ID = Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "excavating");
-    public static final Identifier EXCAVATION_ID = Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "excavation");
-    public static final ResourceKey<Enchantment> EXCAVATING_KEY = ResourceKey.create(Registries.ENCHANTMENT, EXCAVATING_ID);
-    public static final ResourceKey<Enchantment> EXCAVATION_KEY = ResourceKey.create(Registries.ENCHANTMENT, EXCAVATION_ID);
+    
+    
+    public static final ResourceLocation EXCAVATING_ID = IdCompat.of("excavating");
+    public static final ResourceLocation EXCAVATION_ID = IdCompat.of("excavation");
 
     private ExcavationHelper() {
     }
 
-    public static boolean isExcavating(Holder<Enchantment> holder) {
-        if (holder == null) {
-            return false;
-        }
-
-        if (holder.is(EXCAVATING_ID) || holder.is(EXCAVATION_ID) || holder.is(EXCAVATING_KEY) || holder.is(EXCAVATION_KEY)) {
+    
+    public static boolean isExcavating120(Enchantment ench) {
+        if (ench == null) return false;
+        ResourceLocation id = net.minecraft.core.registries.BuiltInRegistries.ENCHANTMENT.getKey(ench);
+        if (id != null && id.getNamespace().equals(QMineTags.MOD_ID) && id.getPath().contains("excavat")) {
             return true;
         }
-
-        if (holder.unwrapKey().isPresent()) {
-            Identifier id = holder.unwrapKey().get().identifier();
-            if (id.getNamespace().equals(QMineTags.MOD_ID) && (id.getPath().equals("excavating") || id.getPath().equals("excavation") || id.getPath().contains("excavat"))) {
-                return true;
-            }
-        }
-
-        String regName = holder.getRegisteredName();
-        if (regName != null && !regName.isEmpty() && !regName.equals("[unregistered]")) {
-            if (regName.equals("qmine:excavating") || regName.equals("qmine:excavation") || regName.contains("excavat")) {
-                return true;
-            }
-        }
-
-        try {
-            if (holder.isBound()) {
-                Enchantment ench = holder.value();
-                if (ench != null) {
-                    Component desc = ench.description();
-                    if (desc != null) {
-                        if (desc.getContents() instanceof TranslatableContents trans) {
-                            String key = trans.getKey();
-                            if (key != null && key.toLowerCase(Locale.ROOT).contains("excavat")) {
-                                return true;
-                            }
-                        }
-                        String str = desc.getString();
-                        if (str != null && str.toLowerCase(Locale.ROOT).contains("excavat")) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        } catch (Throwable ignored) {
-        }
-
-        return false;
+        String desc = ench.getDescriptionId();
+        return desc != null && desc.toLowerCase(Locale.ROOT).contains("excavat");
     }
 
     public static int getExcavatingLevel(ItemStack stack) {
@@ -78,34 +41,12 @@ public final class ExcavationHelper {
 
         int maxLevel = 0;
 
-        // 1. Regular enchantments
-        ItemEnchantments enchantments = stack.get(DataComponents.ENCHANTMENTS);
+        
+        var enchantments = net.minecraft.world.item.enchantment.EnchantmentHelper.getEnchantments(stack);
         if (enchantments != null && !enchantments.isEmpty()) {
             for (var entry : enchantments.entrySet()) {
-                if (isExcavating(entry.getKey())) {
-                    maxLevel = Math.max(maxLevel, entry.getIntValue());
-                }
-            }
-        }
-
-        // 2. Stored enchantments (enchanted books)
-        ItemEnchantments stored = stack.get(DataComponents.STORED_ENCHANTMENTS);
-        if (stored != null && !stored.isEmpty()) {
-            for (var entry : stored.entrySet()) {
-                if (isExcavating(entry.getKey())) {
-                    maxLevel = Math.max(maxLevel, entry.getIntValue());
-                }
-            }
-        }
-
-        // 3. Fallback to stack.getEnchantments()
-        if (maxLevel <= 0) {
-            ItemEnchantments allEnch = stack.getEnchantments();
-            if (allEnch != null && !allEnch.isEmpty()) {
-                for (var entry : allEnch.entrySet()) {
-                    if (isExcavating(entry.getKey())) {
-                        maxLevel = Math.max(maxLevel, entry.getIntValue());
-                    }
+                if (isExcavating120(entry.getKey())) {
+                    maxLevel = Math.max(maxLevel, entry.getValue());
                 }
             }
         }

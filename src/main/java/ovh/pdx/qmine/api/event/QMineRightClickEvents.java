@@ -2,6 +2,7 @@ package ovh.pdx.qmine.api.event;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
+
 import ovh.pdx.qmine.handler.RightClickDispatcher;
 
 public final class QMineRightClickEvents {

@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ovh.pdx.qmine.Qmine;
 
+
 @Mixin(PersistentEntitySectionManager.class)
 public abstract class PersistentEntitySectionManagerMixin<T extends EntityAccess> {
     @Inject(method = "addEntity", at = @At(value = "INVOKE",

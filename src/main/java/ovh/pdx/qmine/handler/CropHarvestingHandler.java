@@ -62,7 +62,7 @@ public final class CropHarvestingHandler implements RightClickHandler {
             return 0;
         }
 
-        ServerLevel level = player.level();
+        ServerLevel level = (ServerLevel) player.level();
         ItemCollector collector = new ItemCollector();
         int harvested = 0;
 

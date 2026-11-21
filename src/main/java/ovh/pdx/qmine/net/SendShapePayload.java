@@ -2,26 +2,18 @@ package ovh.pdx.qmine.net;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
-import ovh.pdx.qmine.tag.QMineTags;
 
+import net.minecraft.resources.ResourceLocation;
+
+import ovh.pdx.qmine.compat.IdCompat;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public record SendShapePayload(int shapeIndex, int shapeRadius, Optional<List<BlockPos>> positions) implements CustomPacketPayload {
-    public static final Type<SendShapePayload> TYPE = new Type<>(
-            Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "send_shape")
-    );
 
-    public static final StreamCodec<FriendlyByteBuf, SendShapePayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.VAR_INT, SendShapePayload::shapeIndex,
-            ByteBufCodecs.VAR_INT, SendShapePayload::shapeRadius,
-            ByteBufCodecs.optional(BlockPos.STREAM_CODEC.apply(ByteBufCodecs.list())), SendShapePayload::positions,
-            SendShapePayload::new
-    );
+public record SendShapePayload(int shapeIndex, int shapeRadius, Optional<List<BlockPos>> positions) {
+    public static final ResourceLocation ID = IdCompat.of("send_shape");
 
     public static SendShapePayload ofShapeOnly(int shapeIndex, int shapeRadius) {
         return new SendShapePayload(shapeIndex, shapeRadius, Optional.empty());
@@ -31,8 +23,32 @@ public record SendShapePayload(int shapeIndex, int shapeRadius, Optional<List<Bl
         return new SendShapePayload(shapeIndex, shapeRadius, Optional.of(positions));
     }
 
-    @Override
-    public Type<SendShapePayload> type() {
-        return TYPE;
+    public static SendShapePayload read(FriendlyByteBuf buf) {
+        int index = buf.readVarInt();
+        int radius = buf.readVarInt();
+        boolean hasBlocks = buf.readBoolean();
+        Optional<List<BlockPos>> positions = Optional.empty();
+        if (hasBlocks) {
+            int count = buf.readVarInt();
+            List<BlockPos> list = new ArrayList<>(count);
+            for (int i = 0; i < count; i++) {
+                list.add(buf.readBlockPos());
+            }
+            positions = Optional.of(list);
+        }
+        return new SendShapePayload(index, radius, positions);
+    }
+
+    public void write(FriendlyByteBuf buf) {
+        buf.writeVarInt(shapeIndex);
+        buf.writeVarInt(shapeRadius);
+        buf.writeBoolean(positions.isPresent());
+        if (positions.isPresent()) {
+            List<BlockPos> list = positions.get();
+            buf.writeVarInt(list.size());
+            for (BlockPos p : list) {
+                buf.writeBlockPos(p);
+            }
+        }
     }
 }

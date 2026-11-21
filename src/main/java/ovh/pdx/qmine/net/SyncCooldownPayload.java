@@ -1,26 +1,24 @@
 package ovh.pdx.qmine.net;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
-import ovh.pdx.qmine.tag.QMineTags;
 
-public record SyncCooldownPayload(long timestamp, CooldownType cooldownType) implements CustomPacketPayload {
-    public static final Type<SyncCooldownPayload> TYPE = new Type<>(
-            Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "sync_cooldown")
-    );
+import net.minecraft.resources.ResourceLocation;
 
-    public static final StreamCodec<FriendlyByteBuf, SyncCooldownPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.VAR_LONG, SyncCooldownPayload::timestamp,
-            ByteBufCodecs.fromCodec(net.minecraft.util.StringRepresentable.fromEnum(CooldownType::values)), SyncCooldownPayload::cooldownType,
-            SyncCooldownPayload::new
-    );
+import ovh.pdx.qmine.compat.IdCompat;
 
-    @Override
-    public Type<SyncCooldownPayload> type() {
-        return TYPE;
+
+public record SyncCooldownPayload(long timestamp, CooldownType cooldownType) {
+    public static final ResourceLocation ID = IdCompat.of("sync_cooldown");
+
+    public static SyncCooldownPayload read(FriendlyByteBuf buf) {
+        long timestamp = buf.readVarLong();
+        CooldownType type = buf.readEnum(CooldownType.class);
+        return new SyncCooldownPayload(timestamp, type);
+    }
+
+    public void write(FriendlyByteBuf buf) {
+        buf.writeVarLong(timestamp);
+        buf.writeEnum(cooldownType);
     }
 
     public enum CooldownType implements net.minecraft.util.StringRepresentable {

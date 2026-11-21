@@ -1,24 +1,20 @@
 package ovh.pdx.qmine.net;
 
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
-import ovh.pdx.qmine.tag.QMineTags;
 
-public record ModeChangedPayload(boolean next) implements CustomPacketPayload {
-    public static final Type<ModeChangedPayload> TYPE = new Type<>(
-            Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "mode_changed")
-    );
+import net.minecraft.resources.ResourceLocation;
 
-    public static final StreamCodec<FriendlyByteBuf, ModeChangedPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.BOOL, ModeChangedPayload::next,
-            ModeChangedPayload::new
-    );
+import ovh.pdx.qmine.compat.IdCompat;
 
-    @Override
-    public Type<ModeChangedPayload> type() {
-        return TYPE;
+
+public record ModeChangedPayload(boolean next) {
+    public static final ResourceLocation ID = IdCompat.of("mode_changed");
+
+    public static ModeChangedPayload read(FriendlyByteBuf buf) {
+        return new ModeChangedPayload(buf.readBoolean());
+    }
+
+    public void write(FriendlyByteBuf buf) {
+        buf.writeBoolean(next);
     }
 }

@@ -2,14 +2,17 @@ package ovh.pdx.qmine.shape;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
+import ovh.pdx.qmine.compat.IdCompat;
 import ovh.pdx.qmine.tag.QMineTags;
 
 public class MiningTunnelShape extends DiagonalTunnelShape {
-    public static final Identifier ID = Identifier.fromNamespaceAndPath(QMineTags.MOD_ID, "mining_tunnel");
+    
+    public static final ResourceLocation ID = IdCompat.of("mining_tunnel");
 
     @Override
-    public Identifier getId() {
+    public ResourceLocation getId() {
         return ID;
     }
 

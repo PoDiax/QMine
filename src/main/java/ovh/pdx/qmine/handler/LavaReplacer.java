@@ -4,7 +4,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -36,7 +37,8 @@ public final class LavaReplacer {
         Block block = blockItem.getBlock();
         BlockState state = block.defaultBlockState();
 
-        if (!state.isSolidRender()) {
+        
+        if (!state.canOcclude()) {
             return false;
         }
 
@@ -44,7 +46,8 @@ public final class LavaReplacer {
             return false;
         }
 
-        Identifier id = BuiltInRegistries.BLOCK.getKey(block);
+        
+        ResourceLocation id = BuiltInRegistries.BLOCK.getKey(block);
         String path = id.getPath();
 
         if (path.contains("ore") || path.startsWith("raw_")) {

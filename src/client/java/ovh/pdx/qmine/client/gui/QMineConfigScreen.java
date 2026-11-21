@@ -1,6 +1,11 @@
 package ovh.pdx.qmine.client.gui;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+
+
+import net.minecraft.client.gui.GuiGraphics;
+
+
+import net.minecraft.client.gui.screens.controls.KeyBindsScreen;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -72,11 +77,11 @@ public class QMineConfigScreen extends Screen {
         addRenderableWidget(keyCycleBtn);
 
         // 6. Overlay Anchor Position
-        var anchorBtn = CycleButton.<QMineClientConfig.OverlayAnchor>builder(
-                        anchor -> Component.literal(anchor.name()),
-                        clientCfg.overlayAnchor
-                )
+        
+        
+        var anchorBtn = CycleButton.<QMineClientConfig.OverlayAnchor>builder(anchor -> Component.literal(anchor.name()))
                 .withValues(QMineClientConfig.OverlayAnchor.values())
+                .withInitialValue(clientCfg.overlayAnchor)
                 .create(rightColX, startY + spacing * 2, buttonWidth, buttonHeight, Component.literal("HUD Anchor"),
                         (button, value) -> clientCfg.overlayAnchor = value);
         anchorBtn.setTooltip(Tooltip.create(Component.literal("Screen corner/position for the QMine HUD overlay.")));
@@ -92,38 +97,42 @@ public class QMineConfigScreen extends Screen {
         addRenderableWidget(treeBtn);
 
         // 8. Felling Animation Style
-        var animBtn = CycleButton.<ovh.pdx.qmine.tree.TreeFellingAnimation>builder(
-                        anim -> Component.literal(anim.displayName),
-                        ConfigManager.getServerConfig().treeFellingAnimation
-                )
+        
+        
+        var animBtn = CycleButton.<ovh.pdx.qmine.tree.TreeFellingAnimation>builder(anim -> Component.literal(anim.displayName))
                 .withValues(ovh.pdx.qmine.tree.TreeFellingAnimation.values())
+                .withInitialValue(ConfigManager.getServerConfig().treeFellingAnimation)
                 .create(rightColX, startY + spacing * 3, buttonWidth, buttonHeight, Component.literal("Animation"),
                         (button, value) -> ConfigManager.getServerConfig().treeFellingAnimation = value);
-        animBtn.setTooltip(Tooltip.create(Component.literal("Tree felling animation style: Instant, Falling Blocks, Shift Down, or Cascade.")));
+        animBtn.setTooltip(Tooltip.create(Component.literal(
+                "Visual animation style when a tree fells (None, Falling physics blocks, or Smoke puff particles)."
+        )));
         addRenderableWidget(animBtn);
 
-        // 9. Leaf Decay Particles
-        var leafPartBtn = CycleButton.onOffBuilder(ConfigManager.getServerConfig().leafDecayParticles)
-                .create(leftColX, startY + spacing * 4, buttonWidth, buttonHeight, Component.literal("Leaf Particles"),
-                        (button, value) -> ConfigManager.getServerConfig().leafDecayParticles = value);
-        leafPartBtn.setTooltip(Tooltip.create(Component.literal(
-                "Emit break particles when leaves rapidly decay. Turn off to reduce clutter."
+        // 9. Instant Leaf Decay
+        var decayBtn = CycleButton.onOffBuilder(ConfigManager.getServerConfig().instantLeafDecay)
+                .create(leftColX, startY + spacing * 4, buttonWidth, buttonHeight, Component.literal("Instant Leaf Decay"),
+                        (button, value) -> ConfigManager.getServerConfig().instantLeafDecay = value);
+        decayBtn.setTooltip(Tooltip.create(Component.literal(
+                "When enabled, connected tree leaves decay instantaneously instead of decaying one-by-one."
         )));
-        addRenderableWidget(leafPartBtn);
+        addRenderableWidget(decayBtn);
 
-        // 10. Leaf Decay Sounds
+        // 10. Play Leaf Break Sounds
         var leafSoundBtn = CycleButton.onOffBuilder(ConfigManager.getServerConfig().leafDecaySounds)
-                .create(rightColX, startY + spacing * 4, buttonWidth, buttonHeight, Component.literal("Leaf Sounds"),
+                .create(rightColX, startY + spacing * 4, buttonWidth, buttonHeight, Component.literal("Leaf Decay Sounds"),
                         (button, value) -> ConfigManager.getServerConfig().leafDecaySounds = value);
         leafSoundBtn.setTooltip(Tooltip.create(Component.literal(
-                "Play leaf crunching sounds when leaves decay. Turn off for silent leaf decay."
+                "Play soft rustling sounds as tree leaves decay."
         )));
         addRenderableWidget(leafSoundBtn);
 
         // 11. Key Binds Configuration
         var keyBindsBtn = Button.builder(Component.literal("Key Binds..."), button -> {
             if (this.minecraft != null) {
-                this.minecraft.gui.setScreen(new net.minecraft.client.gui.screens.options.controls.KeyBindsScreen(this, this.minecraft.options));
+                
+                
+                this.minecraft.setScreen(new KeyBindsScreen(this, this.minecraft.options));
             }
         }).bounds(leftColX, startY + spacing * 5, buttonWidth * 2 + 10, buttonHeight).build();
         keyBindsBtn.setTooltip(Tooltip.create(Component.literal(
@@ -143,14 +152,19 @@ public class QMineConfigScreen extends Screen {
         ConfigManager.saveClientConfig();
         ConfigManager.saveServerConfig();
         if (this.minecraft != null) {
-            this.minecraft.gui.setScreen(this.parent);
+            
+            
+            this.minecraft.setScreen(this.parent);
         }
     }
 
+    
+    
     @Override
-    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTicks) {
-        extractMenuBackground(graphics);
-        super.extractRenderState(graphics, mouseX, mouseY, partialTicks);
-        graphics.centeredText(this.font, this.title, this.width / 2, this.height / 6 - 25, 0x00E5FF);
+    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
+        
+        this.renderBackground(graphics);
+        super.render(graphics, mouseX, mouseY, partialTicks);
+        graphics.drawCenteredString(this.font, this.title, this.width / 2, this.height / 6 - 25, 0x00E5FF);
     }
 }

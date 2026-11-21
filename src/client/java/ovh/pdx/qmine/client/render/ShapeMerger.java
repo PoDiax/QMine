@@ -117,7 +117,7 @@ public final class ShapeMerger {
 
     public boolean mergeNeighbors(Vec3 centerPoint, AABB aabb) {
         for (Direction offsetDirection : Direction.values()) {
-            Vec3 neighborCenter = centerPoint.add(Vec3.atLowerCornerOf(offsetDirection.getUnitVec3i()));
+            Vec3 neighborCenter = centerPoint.add(offsetDirection.getStepX(), offsetDirection.getStepY(), offsetDirection.getStepZ());
             Optional<AABB> potentialNeighbor = getBoxFor(neighborCenter);
 
             if (potentialNeighbor.isPresent()) {

@@ -3,6 +3,7 @@ package ovh.pdx.qmine.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import net.fabricmc.loader.api.FabricLoader;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +18,7 @@ public final class ConfigManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
     private static final Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir().resolve("qmine");
+    
     private static final Path SERVER_CONFIG_PATH = CONFIG_DIR.resolve("server.json");
     private static final Path CLIENT_CONFIG_PATH = CONFIG_DIR.resolve("client.json");
 

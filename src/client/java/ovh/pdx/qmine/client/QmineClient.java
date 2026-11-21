@@ -2,9 +2,12 @@ package ovh.pdx.qmine.client;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
+
+
+
+
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import ovh.pdx.qmine.client.render.QMineHudOverlay;
 import ovh.pdx.qmine.client.render.QMineOutlineRenderer;
 import ovh.pdx.qmine.config.ConfigManager;
@@ -19,13 +22,15 @@ public class QmineClient implements ClientModInitializer {
 
         ClientTickEvents.START_CLIENT_TICK.register(controller::clientTick);
 
-        HudElementRegistry.attachElementAfter(
-                VanillaHudElements.SUBTITLES,
-                QMineHudOverlay.ID,
-                QMineHudOverlay.getInstance()
-        );
+        
+        
+        
+        
+        HudRenderCallback.EVENT.register((guiGraphics, tickDelta) -> {
+            QMineHudOverlay.getInstance().render(guiGraphics, tickDelta);
+        });
 
-        LevelRenderEvents.AFTER_TRANSLUCENT_FEATURES.register(context -> {
+        WorldRenderEvents.AFTER_TRANSLUCENT.register(context -> {
             QMineOutlineRenderer.getInstance().renderInGame(context);
         });
     }
