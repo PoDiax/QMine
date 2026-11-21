@@ -143,7 +143,8 @@ public class Qmine {
 
     private void onBlockBreak(BlockEvent.BreakEvent event) {
         if (event.getPlayer() instanceof ServerPlayer sp) {
-            if (!BlockBreakHandler.getInstance().handleBlockBreak(event.getLevel(), event.getPos(), event.getState(), sp)) {
+            boolean handled = BlockBreakHandler.getInstance().handleBlockBreak(event.getLevel(), event.getPos(), event.getState(), sp);
+            if (handled) {
                 event.setCanceled(true);
             }
         }
