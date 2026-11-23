@@ -83,6 +83,10 @@ public class QMineConfig {
     ));
 
     public List<String> mergeTagsShaped = new ArrayList<>(List.of(
-            "*"
+            "minecraft:base_stone_overworld",
+            "minecraft:base_stone_nether",
+            "minecraft:*_ores",
+            "c:ores/*",
+            "c:ores"
     ));
 }
