@@ -46,6 +46,23 @@ public final class BlockBreakHandler {
         return INSTANCE;
     }
 
+    public static boolean canHarvest(Player player, BlockState state) {
+        return canHarvest(player, BlockPos.ZERO, state);
+    }
+
+    public static boolean canHarvest(Player player, BlockPos pos, BlockState state) {
+        if (player.isCreative()) {
+            return true;
+        }
+        if (state.getDestroySpeed(player.level(), pos) < 0) {
+            return false;
+        }
+        if (!state.requiresCorrectToolForDrops()) {
+            return true;
+        }
+        return AutoToolSwapper.hasHarvestTool(player, state);
+    }
+
     public static boolean isValidTool(Player player, BlockPos pos, BlockState state) {
         ItemStack mainHand = player.getMainHandItem();
 
@@ -53,6 +70,10 @@ public final class BlockBreakHandler {
         boolean hasRequiredTool = !ConfigManager.getServerConfig().requireTool
                 || (!mainHand.isEmpty() && (mainHand.getItem() instanceof net.minecraft.world.item.DiggerItem || mainHand.getMaxDamage() > 0 || QMineTags.isIncludedTool(mainHand)));
         if (!hasRequiredTool) {
+            return false;
+        }
+
+        if (!player.isCreative() && state.requiresCorrectToolForDrops() && !player.hasCorrectToolForDrops(state)) {
             return false;
         }
 
@@ -290,10 +311,12 @@ public final class BlockBreakHandler {
                     }
                 }
 
-                Shape currentShape = data.getCurrentShape();
-                List<String> mergeTags = (currentShape != null && !currentShape.isIndeterminate()) ? config.mergeTagsShaped : config.mergeTagsShapeless;
+                if (!player.isCreative() && targetState.requiresCorrectToolForDrops() && !player.hasCorrectToolForDrops(targetState)) {
+                    continue;
+                }
+
                 float destroySpeed = targetState.getDestroySpeed(level, pos);
-                boolean hardnessValid = destroySpeed >= 0 && (destroySpeed <= Math.max(1.0f, baseDestroySpeed * 3.0f) || BlockMatchers.matchTags(state, targetState, mergeTags));
+                boolean hardnessValid = destroySpeed >= 0 && (destroySpeed <= Math.max(1.0f, baseDestroySpeed * 3.0f) || BlockMatchers.matchTags(state, targetState, config.mergeTagsShapeless));
                 if (!player.isCreative() && (!hardnessValid || !isValidTool(player, pos, targetState))) {
                     continue;
                 }

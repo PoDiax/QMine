@@ -415,7 +415,7 @@ public final class QMineYaclScreen {
                                 .option(Option.<Boolean>createBuilder()
                                         .name(Component.literal("Require Valid Tool for Block"))
                                         .description(OptionDescription.of(Component.literal("Whether the tool held must be effective for block drops (e.g. pickaxe for stone).")))
-                                        .binding(false, () -> serverCfg.requireValidToolForBlock, val -> serverCfg.requireValidToolForBlock = val)
+                                        .binding(true, () -> serverCfg.requireValidToolForBlock, val -> serverCfg.requireValidToolForBlock = val)
                                         .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
                                         .build()
                                 )
