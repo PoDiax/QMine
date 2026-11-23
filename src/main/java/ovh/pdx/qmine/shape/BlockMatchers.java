@@ -3,7 +3,6 @@ package ovh.pdx.qmine.shape;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.Level;
@@ -35,20 +34,23 @@ public final class BlockMatchers {
     );
 
     public static ShapeContext.Matcher determineBestMatcher(Level level, BlockPos pos, BlockState originState, Shape shape) {
-        ShapeContext.Matcher tagMatcher = shape.isIndeterminate() ? MATCH_BY_TAGS_SHAPELESS : MATCH_BY_TAGS_SHAPED;
-
-        if (tagMatcher.check(originState, originState)) {
-            return tagMatcher;
-        } else if (isCrop(originState)) {
+        if (isCrop(originState)) {
             return MATCH_BY_CROP_TYPE;
+        }
+
+        if (shape.isIndeterminate()) {
+            if (matchesTagPatterns(originState, ConfigManager.getServerConfig().mergeTagsShapeless)) {
+                return MATCH_BY_TAGS_SHAPELESS;
+            } else {
+                return MATCH_BY_BLOCK;
+            }
         } else {
-            return MATCH_BY_BLOCK;
+            return MATCH_BY_TAGS_SHAPED;
         }
     }
 
     public static boolean isCrop(BlockState state) {
         Block block = state.getBlock();
-        
         return block instanceof BushBlock || block instanceof CocoaBlock;
     }
 
@@ -67,12 +69,8 @@ public final class BlockMatchers {
         return 0;
     }
 
-    public static boolean matchTags(BlockState origin, BlockState target, List<String> tagPatterns) {
-        if (origin.getBlock() == target.getBlock()) {
-            return true;
-        }
-
-        if (target.isAir() || target.getBlock() instanceof LiquidBlock || origin.getBlock() instanceof EntityBlock) {
+    public static boolean matchesTagPatterns(BlockState state, List<String> tagPatterns) {
+        if (state.isAir() || state.getBlock() instanceof LiquidBlock || state.getBlock() instanceof EntityBlock) {
             return false;
         }
 
@@ -82,13 +80,48 @@ public final class BlockMatchers {
 
         Set<TagKey<Block>> resolvedTags = new HashSet<>();
         for (String patternStr : tagPatterns) {
-            
             ResourceLocation id = ResourceLocation.tryParse(patternStr);
             if (id != null) {
                 resolvedTags.add(TagKey.create(Registries.BLOCK, id));
             } else {
                 Pattern regex = globToRegex(patternStr);
-                
+                BuiltInRegistries.BLOCK.getTagNames().forEach(tagKey -> {
+                    if (regex.matcher(tagKey.location().toString()).matches()) {
+                        resolvedTags.add(tagKey);
+                    }
+                });
+            }
+        }
+
+        for (TagKey<Block> tag : resolvedTags) {
+            if (state.is(tag)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static boolean matchTags(BlockState origin, BlockState target, List<String> tagPatterns) {
+        if (origin.getBlock() == target.getBlock()) {
+            return true;
+        }
+
+        if (target.isAir() || target.getBlock() instanceof LiquidBlock || origin.getBlock() instanceof EntityBlock || target.getBlock() instanceof EntityBlock) {
+            return false;
+        }
+
+        if (tagPatterns.contains("*")) {
+            return true;
+        }
+
+        Set<TagKey<Block>> resolvedTags = new HashSet<>();
+        for (String patternStr : tagPatterns) {
+            ResourceLocation id = ResourceLocation.tryParse(patternStr);
+            if (id != null) {
+                resolvedTags.add(TagKey.create(Registries.BLOCK, id));
+            } else {
+                Pattern regex = globToRegex(patternStr);
                 BuiltInRegistries.BLOCK.getTagNames().forEach(tagKey -> {
                     if (regex.matcher(tagKey.location().toString()).matches()) {
                         resolvedTags.add(tagKey);
