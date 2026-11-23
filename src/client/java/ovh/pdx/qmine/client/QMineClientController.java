@@ -53,6 +53,7 @@ public final class QMineClientController {
     private int blockCount = 0;
     private List<BlockPos> shapeBlocks = Collections.emptyList();
     private long lastKeyToggleTime = 0L;
+    private long lastScrollTime = 0L;
 
     private QMineClientController() {
     }
@@ -155,18 +156,27 @@ public final class QMineClientController {
     }
 
     public boolean onMouseScrolled(double amountX, double amountY) {
-        if (keyPressed && (amountY != 0 || amountX != 0)) {
-            boolean increase = amountY > 0D || amountX > 0D;
+        if (!keyPressed) {
+            return false;
+        }
 
-            if (isSizeModifierDown() || ConfigManager.getClientConfig().lockScrollToSize) {
-                sendShapeResize(increase);
-                return true;
-            }
-
-            sendModeChanged(!increase);
+        double delta = amountY != 0 ? amountY : amountX;
+        if (delta == 0) {
             return true;
         }
-        return false;
+
+        long now = System.currentTimeMillis();
+        if (now - lastScrollTime >= 100L) {
+            lastScrollTime = now;
+            boolean increase = delta > 0D;
+
+            if (isSizeModifierDown() || ConfigManager.getClientConfig().lockScrollToSize) {
+                resizeShape(increase);
+            } else {
+                cycleShape(!increase);
+            }
+        }
+        return true;
     }
 
     public boolean onKeyPress() {
