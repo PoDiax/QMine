@@ -23,9 +23,19 @@ import ovh.pdx.qmine.client.QMineClientController;
 import ovh.pdx.qmine.config.ConfigManager;
 
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class QMineOutlineRenderer {
     private static final QMineOutlineRenderer INSTANCE = new QMineOutlineRenderer();
+
+    private final AtomicInteger updateCounter = new AtomicInteger();
+    private final ExecutorService backgroundWorker = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "QMine-OutlineWorker");
+        t.setDaemon(true);
+        return t;
+    });
 
     @Nullable
     private volatile BlockPos cachedOriginPos;
@@ -39,6 +49,7 @@ public final class QMineOutlineRenderer {
     }
 
     public void clear() {
+        updateCounter.incrementAndGet();
         cachedOriginPos = null;
         cachedEdges = List.of();
     }
@@ -49,41 +60,63 @@ public final class QMineOutlineRenderer {
             return;
         }
 
-        int maxOutline = ConfigManager.getClientConfig().renderOutlineMaxBlocks;
-        List<BlockPos> renderList = blocks.size() > maxOutline ? blocks.subList(0, maxOutline) : blocks;
+        final int version = updateCounter.incrementAndGet();
+        final List<BlockPos> blockList = List.copyOf(blocks);
 
-        BlockPos origin = renderList.get(0);
-        List<CachedEdge> edges = new ArrayList<>();
+        backgroundWorker.execute(() -> {
+            if (version != updateCounter.get()) {
+                return;
+            }
 
-        if (ConfigManager.getClientConfig().showBlockGrid) {
-            for (BlockPos pos : renderList) {
-                double relX = pos.getX() - origin.getX();
-                double relY = pos.getY() - origin.getY();
-                double relZ = pos.getZ() - origin.getZ();
-                VoxelShape singleBlock = Shapes.box(relX + 0.002, relY + 0.002, relZ + 0.002,
-                        relX + 0.998, relY + 0.998, relZ + 0.998);
-                singleBlock.forAllEdges((x1, y1, z1, x2, y2, z2) ->
+            int maxOutline = ConfigManager.getClientConfig().renderOutlineMaxBlocks;
+            List<BlockPos> renderList = blockList.size() > maxOutline ? blockList.subList(0, maxOutline) : blockList;
+
+            BlockPos origin = renderList.get(0);
+            List<CachedEdge> edges = new ArrayList<>();
+
+            if (ConfigManager.getClientConfig().showBlockGrid) {
+                for (BlockPos pos : renderList) {
+                    double relX = pos.getX() - origin.getX();
+                    double relY = pos.getY() - origin.getY();
+                    double relZ = pos.getZ() - origin.getZ();
+                    VoxelShape singleBlock = Shapes.box(relX + 0.002, relY + 0.002, relZ + 0.002,
+                            relX + 0.998, relY + 0.998, relZ + 0.998);
+                    singleBlock.forAllEdges((x1, y1, z1, x2, y2, z2) ->
+                            edges.add(CachedEdge.fromDoubles(x1, y1, z1, x2, y2, z2))
+                    );
+                }
+            } else {
+                List<VoxelShape> shapes = new ArrayList<>();
+                for (AABB aabb : ShapeMerger.merge(renderList, origin)) {
+                    shapes.add(Shapes.create(aabb.inflate(0.005D)));
+                }
+
+                VoxelShape combined = combineShapes(shapes, 0, shapes.size());
+                combined.forAllEdges((x1, y1, z1, x2, y2, z2) ->
                         edges.add(CachedEdge.fromDoubles(x1, y1, z1, x2, y2, z2))
                 );
             }
-        } else {
-            Collection<VoxelShape> shapes = new ArrayList<>();
-            for (AABB aabb : ShapeMerger.merge(renderList, origin)) {
-                shapes.add(Shapes.create(aabb.inflate(0.005D)));
-            }
 
-            VoxelShape combined = Shapes.empty();
-            for (VoxelShape shape : shapes) {
-                combined = Shapes.joinUnoptimized(combined, shape, BooleanOp.OR);
+            if (version == updateCounter.get()) {
+                this.cachedOriginPos = origin;
+                this.cachedEdges = List.copyOf(edges);
             }
+        });
+    }
 
-            combined.optimize().forAllEdges((x1, y1, z1, x2, y2, z2) ->
-                    edges.add(CachedEdge.fromDoubles(x1, y1, z1, x2, y2, z2))
-            );
+    private static VoxelShape combineShapes(List<VoxelShape> shapes, int start, int end) {
+        int count = end - start;
+        if (count <= 0) {
+            return Shapes.empty();
         }
-
-        this.cachedOriginPos = origin;
-        this.cachedEdges = List.copyOf(edges);
+        if (count == 1) {
+            return shapes.get(start);
+        }
+        if (count == 2) {
+            return Shapes.or(shapes.get(start), shapes.get(start + 1));
+        }
+        int mid = start + count / 2;
+        return Shapes.or(combineShapes(shapes, start, mid), combineShapes(shapes, mid, end));
     }
 
     
