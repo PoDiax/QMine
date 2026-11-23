@@ -34,14 +34,18 @@ public final class BlockMatchers {
     );
 
     public static ShapeContext.Matcher determineBestMatcher(Level level, BlockPos pos, BlockState originState, Shape shape) {
-        ShapeContext.Matcher tagMatcher = shape.isIndeterminate() ? MATCH_BY_TAGS_SHAPELESS : MATCH_BY_TAGS_SHAPED;
-
-        if (tagMatcher.check(originState, originState)) {
-            return tagMatcher;
-        } else if (isCrop(originState)) {
+        if (isCrop(originState)) {
             return MATCH_BY_CROP_TYPE;
+        }
+
+        if (shape.isIndeterminate()) {
+            if (matchesTagPatterns(originState, ConfigManager.getServerConfig().mergeTagsShapeless)) {
+                return MATCH_BY_TAGS_SHAPELESS;
+            } else {
+                return MATCH_BY_BLOCK;
+            }
         } else {
-            return MATCH_BY_BLOCK;
+            return MATCH_BY_TAGS_SHAPED;
         }
     }
 
@@ -65,12 +69,45 @@ public final class BlockMatchers {
         return 0;
     }
 
+    public static boolean matchesTagPatterns(BlockState state, List<String> tagPatterns) {
+        if (state.isAir() || state.getBlock() instanceof LiquidBlock || state.getBlock() instanceof EntityBlock) {
+            return false;
+        }
+
+        if (tagPatterns.contains("*")) {
+            return true;
+        }
+
+        Set<TagKey<Block>> resolvedTags = new HashSet<>();
+        for (String patternStr : tagPatterns) {
+            Identifier id = Identifier.tryParse(patternStr);
+            if (id != null) {
+                resolvedTags.add(TagKey.create(Registries.BLOCK, id));
+            } else {
+                Pattern regex = globToRegex(patternStr);
+                BuiltInRegistries.BLOCK.getTags().forEach(holder -> {
+                    if (regex.matcher(holder.key().location().toString()).matches()) {
+                        resolvedTags.add(holder.key());
+                    }
+                });
+            }
+        }
+
+        for (TagKey<Block> tag : resolvedTags) {
+            if (state.is(tag)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static boolean matchTags(BlockState origin, BlockState target, List<String> tagPatterns) {
         if (origin.getBlock() == target.getBlock()) {
             return true;
         }
 
-        if (target.isAir() || target.getBlock() instanceof LiquidBlock || origin.getBlock() instanceof EntityBlock) {
+        if (target.isAir() || target.getBlock() instanceof LiquidBlock || origin.getBlock() instanceof EntityBlock || target.getBlock() instanceof EntityBlock) {
             return false;
         }
 
