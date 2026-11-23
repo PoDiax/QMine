@@ -20,7 +20,7 @@ public class QMineConfig {
 
     public int maxBlocks = 64;
     public boolean requireTool = false;
-    public boolean requireValidToolForBlock = false;
+    public boolean requireValidToolForBlock = true;
     public long cooldownTicks = 0L;
     public int preventToolBreakDurability = 1;
     public boolean cancelOnBlockBreakFail = false;
