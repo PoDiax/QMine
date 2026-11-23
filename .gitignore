@@ -27,3 +27,4 @@ Thumbs.db
 sources_for_dev/
 *.log
 output/
+docs/
