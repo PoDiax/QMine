@@ -33,6 +33,18 @@ public final class BlockMatchers {
             BlockMatchers::areCropsEquivalent
     );
 
+    public static final ShapeContext.Matcher MATCH_TUNNEL_STONE = BlockMatcher.wrap(
+            (origin, target) -> {
+                if (origin.getBlock() == target.getBlock()) {
+                    return true;
+                }
+                if (matchTags(origin, target, ConfigManager.getServerConfig().mergeTagsShaped)) {
+                    return true;
+                }
+                return ovh.pdx.qmine.handler.BlockBreakHandler.isOre(target);
+            }
+    );
+
     public static ShapeContext.Matcher determineBestMatcher(Level level, BlockPos pos, BlockState originState, Shape shape) {
         if (isCrop(originState)) {
             return MATCH_BY_CROP_TYPE;
@@ -44,9 +56,20 @@ public final class BlockMatchers {
             } else {
                 return MATCH_BY_BLOCK;
             }
+        } else if (shape.isTunnel() && isBaseStone(originState)) {
+            return MATCH_TUNNEL_STONE;
         } else {
-            return MATCH_BY_TAGS_SHAPED;
+            if (matchesTagPatterns(originState, ConfigManager.getServerConfig().mergeTagsShaped)) {
+                return MATCH_BY_TAGS_SHAPED;
+            } else {
+                return MATCH_BY_BLOCK;
+            }
         }
+    }
+
+    public static boolean isBaseStone(BlockState state) {
+        return state.is(net.minecraft.tags.BlockTags.BASE_STONE_OVERWORLD)
+                || state.is(net.minecraft.tags.BlockTags.BASE_STONE_NETHER);
     }
 
     public static boolean isCrop(BlockState state) {
@@ -74,12 +97,11 @@ public final class BlockMatchers {
             return false;
         }
 
-        if (tagPatterns.contains("*")) {
-            return true;
-        }
-
         Set<TagKey<Block>> resolvedTags = new HashSet<>();
         for (String patternStr : tagPatterns) {
+            if (patternStr == null || patternStr.isBlank() || patternStr.equals("*")) {
+                continue;
+            }
             ResourceLocation id = ResourceLocation.tryParse(patternStr);
             if (id != null) {
                 resolvedTags.add(TagKey.create(Registries.BLOCK, id));
@@ -111,12 +133,11 @@ public final class BlockMatchers {
             return false;
         }
 
-        if (tagPatterns.contains("*")) {
-            return true;
-        }
-
         Set<TagKey<Block>> resolvedTags = new HashSet<>();
         for (String patternStr : tagPatterns) {
+            if (patternStr == null || patternStr.isBlank() || patternStr.equals("*")) {
+                continue;
+            }
             ResourceLocation id = ResourceLocation.tryParse(patternStr);
             if (id != null) {
                 resolvedTags.add(TagKey.create(Registries.BLOCK, id));
