@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import ovh.pdx.qmine.handler.BlockBreakHandler;
 
 public record ShapeContext(
         ServerPlayer player,
@@ -20,10 +21,16 @@ public record ShapeContext(
     }
 
     public boolean check(BlockPos pos) {
-        if (!player.level().hasChunkAt(pos)) {
+        if (player == null || !player.level().hasChunkAt(pos)) {
             return false;
         }
         BlockState state = getBlockState(pos);
+        if (state.isAir()) {
+            return false;
+        }
+        if (!player.isCreative() && !BlockBreakHandler.canHarvest(player, pos, state)) {
+            return false;
+        }
         return matcher.check(originState, state);
     }
 
