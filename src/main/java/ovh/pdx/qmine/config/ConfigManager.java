@@ -11,6 +11,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 
 public final class ConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("QMine/Config");
@@ -48,6 +49,17 @@ public final class ConfigManager {
                     }
                 }
             } else {
+                saveServerConfig();
+            }
+
+            if (serverConfig.mergeTagsShaped == null || serverConfig.mergeTagsShaped.isEmpty() || serverConfig.mergeTagsShaped.contains("*")) {
+                serverConfig.mergeTagsShaped = new ArrayList<>(java.util.List.of(
+                        "minecraft:base_stone_overworld",
+                        "minecraft:base_stone_nether",
+                        "minecraft:*_ores",
+                        "c:ores/*",
+                        "c:ores"
+                ));
                 saveServerConfig();
             }
         } catch (Exception e) {
